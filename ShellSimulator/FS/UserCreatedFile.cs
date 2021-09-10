@@ -33,7 +33,7 @@ namespace ShellSimulator.FS
             Array.Copy(bytes, data, bytes.Length);
         }
 
-        protected override int OnExecute(Shell shell, Application sender, string[] args)
+        protected override int OnExecute(Shell shell, Application sender, System.IO.TextWriter stdout, string[] args)
         {
             throw new System.NotImplementedException();
         }

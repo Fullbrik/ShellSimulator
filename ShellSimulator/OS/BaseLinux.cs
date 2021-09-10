@@ -56,6 +56,7 @@ namespace ShellSimulator.OS
             fs.InstallApplication("/usr/bin/mkdir", (s) => new MKDir(s));
             fs.InstallApplication("/usr/bin/touch", (s) => new Touch(s));
             fs.InstallApplication("/usr/bin/cat", (s) => new Cat(s));
+            fs.InstallApplication("/usr/bin/exit", (s) => new Exit(s));
         }
 
         private void CreateHomeDirectory(FileSystem fs)

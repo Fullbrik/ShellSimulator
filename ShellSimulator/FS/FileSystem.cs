@@ -222,7 +222,7 @@ namespace ShellSimulator.FS
             CreateFile(file, path);
         }
 
-        public int ExecuteFileOnPath(string path, Application sender, params string[] args)
+        public int ExecuteFileOnPath(string path, Application sender, System.IO.TextWriter stdout, params string[] args)
         {
             var PATH = Shell.Path;
 
@@ -234,7 +234,7 @@ namespace ShellSimulator.FS
                 catch (FSException) { } //Ignore any fs exceptions because we just want to move on if the file is inaccessible
 
                 if (file != null)
-                    return file.Execute(Shell, sender, args);
+                    return file.Execute(Shell, sender, stdout, args);
             }
 
             throw new CommandNotFoundException(path);

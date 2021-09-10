@@ -35,7 +35,7 @@ namespace ShellSimulator.FS
             throw new System.NotImplementedException();
         }
 
-        protected override int OnExecute(Shell shell, Application sender, string[] args)
+        protected override int OnExecute(Shell shell, Application sender, System.IO.TextWriter stdout, string[] args)
         {
             throw new System.NotImplementedException();
         }
