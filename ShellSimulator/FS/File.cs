@@ -14,14 +14,14 @@ namespace ShellSimulator.FS
 
         public abstract void Write(byte[] bytes);
 
-        public int Execute(Shell shell, Application sender, params string[] args)
+        public int Execute(Shell shell, Application sender, System.IO.TextWriter STDOut, params string[] args)
         {
-            if (IsExecutable) return OnExecute(shell, sender, args);
+            if (IsExecutable) return OnExecute(shell, sender, STDOut ?? shell.STDOut, args);
             else shell.STDOut.WriteLine("Cannot execute file.");
 
             return 20567;
         }
 
-        protected abstract int OnExecute(Shell shell, Application sender, string[] args);
+        protected abstract int OnExecute(Shell shell, Application sender, System.IO.TextWriter STDOut, string[] args);
     }
 }

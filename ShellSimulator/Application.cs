@@ -5,12 +5,17 @@ namespace ShellSimulator
 {
     public abstract class Application
     {
+        public bool IsRunning { get; protected set; }
+
         public Shell Shell { get; }
         public FileSystem FileSystem { get => Shell.FS; }
+
+        public System.IO.TextWriter STDOut { get; set; }
 
         public Application(Shell shell)
         {
             Shell = shell;
+            STDOut = Shell.STDOut;
         }
 
         public Application Parent { get; set; }
@@ -19,12 +24,16 @@ namespace ShellSimulator
         {
             Parent = parent;
             Shell.OnStartProcess(this);
+            IsRunning = true;
             int result = Main(args);
+            IsRunning = false;
             Shell.OnEndProcess(this);
             return result;
         }
 
         protected abstract int Main(string[] args);
+
+        public virtual void Exit() { }
 
         #region STDIO API
         protected void Printf(string str, params object[] args)

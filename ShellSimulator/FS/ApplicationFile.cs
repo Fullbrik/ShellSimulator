@@ -42,9 +42,11 @@ namespace ShellSimulator.FS
             throw new System.NotImplementedException();
         }
 
-        protected override int OnExecute(Shell shell, Application sender, string[] args)
+        protected override int OnExecute(Shell shell, Application sender, System.IO.TextWriter STDOut, string[] args)
         {
-            return AppBuilder(shell).Start(sender ?? shell.RootProcess, args);
+            var application = AppBuilder(shell);
+            application.STDOut = STDOut ?? shell.STDOut;
+            return application.Start(sender ?? shell.RootProcess, args);
         }
     }
 }

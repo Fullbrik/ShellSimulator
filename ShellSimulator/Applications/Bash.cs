@@ -1,9 +1,8 @@
-using System.Linq;
-using ShellSimulator.FS;
+using System;
 
 namespace ShellSimulator.Applications
 {
-    public class Bash : Application
+    public partial class Bash : Application
     {
         public Bash(Shell shell) : base(shell)
         {
@@ -11,85 +10,94 @@ namespace ShellSimulator.Applications
 
         protected override int Main(string[] args)
         {
-            while (true)
+            if (args.Length > 0) // We will execute args without going into interactive mode
             {
-                PrintPreThingy();
-                string enteredCommand = ReadLine();
+                return Execute(string.Join(" ", args));
+            }
+            else // If we don't pass anything in, we will go into interactive mode
+            {
+                InteractiveMode();
+            }
 
-                string[] commandAndArgs = ParseCommandArguments(enteredCommand);
-                string command = Shell.CheckAlias(commandAndArgs[0]);
+            return 0;
+        }
 
-                string[] argsNoCommand = commandAndArgs.ToList().DoChained((caa) => caa.RemoveAt(0)).ToArray(); //Hacked way to remove the first element so all the args are just args and not the command's name.
+        private void InteractiveMode()
+        {
+            while (IsRunning)
+            {
+                Printf("{0}@{1}:{2}$ ", Shell.Username, Shell.MachineName, Shell.CWD); // IE: mcp613@mcp613PC:~$
 
-                try
-                {
-                    int result = ExecuteCommand(command, argsNoCommand);
+                string input = ReadLine();
 
-                    if (result != 0)
-                    {
-                        Printlnf("Application {0} exited with code {1}", command, result);
-                    }
-                }
-                catch (CommandNotFoundException e)
-                {
-                    Printlnf(e.Message);
-                }
-#if !DEBUG
-                catch (System.Exception e)
-                {
-                    Printlnf(e.message);
+                int result = Execute(input);
 
-                }
-#endif
+                if (result != 0) Printlnf("Process exited with code: {0}", result);
             }
         }
 
-        private void PrintPreThingy()
+        public int Execute(string input, System.IO.TextWriter stdout = null)
         {
-            Printf("{0}@{1}:{2}$ ", Shell.Username, Shell.MachineName, Shell.CWD);
+            //Parse
+            var parser = new Parser(input, this);
+            parser.Parse();
+            var parts = parser.GetParts();
+
+            //Tokenize
+            var tokenizer = new Tokenizer(parts);
+            tokenizer.Tokenize();
+            var tokens = tokenizer.GetTokens();
+
+            return ExecuteTokens(tokens, stdout);
         }
 
-        private string[] ParseCommandArguments(string commandLine)
+        private int ExecuteTokens(Token[] tokens, System.IO.TextWriter stdout)
         {
-            char[] parmChars = commandLine.ToCharArray(); //Create char array
-            bool inQuote = false; //See weather we are in a quote (b/c if we are, we don't split by space)
-            bool escapeNext = false;
-            for (int index = 0; index < parmChars.Length; index++)
+            foreach (var token in tokens)
             {
-                if (!escapeNext)
+                switch (token.Type)
                 {
-                    switch (parmChars[index])
-                    {
-                        case ' ':
-                            if (!inQuote)
-                                parmChars[index] = '\n';
+                    case TokenType.Command:
+                        if (token is CommandToken command)
+                        {
+                            try
+                            {
+                                int result = ExecuteCommand(command.Command, command.Args, stdout);
+
+                                if (result != 0) return result;
+                            }
+                            catch (System.Exception e)
+                            {
+                                Printlnf("Error: {0}", e.Message);
+                                return 1;
+                            }
                             break;
-                        case '\\':
-                            escapeNext = true;
-                            parmChars[index] = (char)2;
-                            break;
-                        case '"':
-                            inQuote = !inQuote;
-                            parmChars[index] = (char)2;
-                            break;
-                        default:
-                            break;
-                    }
-                }
-                else
-                {
-                    escapeNext = false;
+                        }
+                        else
+                        {
+                            Printlnf("Bash Error: Unkown token received.");
+                            return int.MinValue;
+                        }
+                    default:
+                        Printlnf("Bash Error: Unkown token received.");
+                        return int.MinValue;
                 }
             }
-            return (new string(parmChars)).Replace(((char)2).ToString(), "").ReplaceShellVars(Shell).Split('\n', System.StringSplitOptions.RemoveEmptyEntries);
+
+            return 0;
         }
 
-        private int ExecuteCommand(string command, string[] args)
+        private int ExecuteCommand(string command, string[] args, System.IO.TextWriter stdout)
         {
             if (command.Contains('/'))
-                return FileSystem.ExecuteFile(FileSystem.RelativePathToAbsolutePath(command), this, args);
+                return FileSystem.ExecuteFile(FileSystem.RelativePathToAbsolutePath(command), this, stdout, args);
             else
-                return FileSystem.ExecuteFileOnPath(command, this, args);
+                return FileSystem.ExecuteFileOnPath(command, this, stdout, args);
+        }
+
+        public override void Exit()
+        {
+            IsRunning = false;
         }
     }
 }

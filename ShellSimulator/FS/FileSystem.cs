@@ -242,6 +242,11 @@ namespace ShellSimulator.FS
 
         public int ExecuteFile(string path, Application sender, params string[] args)
         {
+            return ExecuteFile(path, sender, null, args);
+        }
+
+        public int ExecuteFile(string path, Application sender, System.IO.TextWriter stdout, params string[] args)
+        {
             File file = null;
 
             try
@@ -254,7 +259,7 @@ namespace ShellSimulator.FS
             }
 
             if (file != null)
-                return file.Execute(Shell, sender, args);
+                return file.Execute(Shell, sender, stdout, args);
             else
                 throw new CommandNotFoundException(path);
         }
