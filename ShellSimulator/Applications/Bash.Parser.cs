@@ -20,6 +20,7 @@ namespace ShellSimulator.Applications
             bool isEscaping = false;
             bool isEmbeding = false;
             bool isEmbedingCommand = false;
+            bool isInEmbeddingString = false;
 
             bool failed = false;
 
@@ -89,7 +90,21 @@ namespace ShellSimulator.Applications
                 {
                     CompleteEmbed(character, ref isPartFinished);
                 }
-                else if (character == ')' && isEmbedingCommand)
+                else if (isInEmbeddingString && isEscaping)
+                {
+                    currentEmbed += character;
+                }
+                else if (character == '\'' || character == '"')
+                {
+                    currentEmbed += character;
+                    isInEmbeddingString = !isInEmbeddingString;
+                }
+                else if (character == '\\' && isInEmbeddingString)
+                {
+                    currentEmbed += character;
+                    isEscaping = true;
+                }
+                else if (character == ')' && isEmbedingCommand && !isInEmbeddingString)
                 {
                     CompleteEmbed(character, ref isPartFinished);
                 }
@@ -105,21 +120,7 @@ namespace ShellSimulator.Applications
 
                 if (isEmbedingCommand) //We need to execute the command to get it's stdout, and use that as a part
                 {
-                    using (var stdout = new StringWriter())
-                    {
-                        int result = Bash.Execute(currentEmbed, stdout);
-
-                        if (result != 0)
-                        {
-                            failed = true;
-                            return;
-                        }
-                        else
-                        {
-                            string output = stdout.ToString();
-                            parts.Add(output);
-                        }
-                    }
+                    parts.Add(ExecuteAndGetOutput(currentEmbed));
                 }
                 else
                 {
@@ -130,6 +131,24 @@ namespace ShellSimulator.Applications
                         isPartFinished = true;
                     else //If we are in a string, we need to also push a space, because that's what the user prob expects
                         current += character;
+                }
+            }
+
+            private string ExecuteAndGetOutput(string command)
+            {
+                using (var stdout = new StringWriter())
+                {
+                    int result = Bash.Execute(command, stdout);
+
+                    if (result != 0)
+                    {
+                        failed = true;
+                        return null;
+                    }
+                    else
+                    {
+                        return stdout.ToString();
+                    }
                 }
             }
 

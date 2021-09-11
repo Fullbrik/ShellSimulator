@@ -8,9 +8,12 @@ namespace ShellSimulator
     {
         public Func<int> RequestKey;
 
+        string buffer = "";
+
         public override int Read()
         {
             if (RequestKey == null) return -1;
+            else if (buffer.Length > 0) { char next = buffer[0]; buffer.Remove(0, 1); return next; } //If we have anything in the buffer, we should use that first.
             else return RequestKey();
         }
 
@@ -41,6 +44,12 @@ namespace ShellSimulator
             }
             if (sb.Length > 0) return sb.ToString();
             return null;
+        }
+
+        public void WriteToBuffer(string text)
+        {
+            if (text != null)
+                buffer += text;
         }
     }
 }

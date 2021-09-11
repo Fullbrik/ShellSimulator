@@ -5,7 +5,7 @@ namespace ShellSimulator.Applications
     {
         enum TokenType
         {
-            Command
+            Command,
         }
 
         abstract class Token
@@ -21,12 +21,15 @@ namespace ShellSimulator.Applications
 
             public string[] Args { get => _args.ToArray(); }
             private List<string> _args = new List<string>();
-
             public void AddArg(string arg) => _args.Add(arg);
 
-            public CommandToken(string command)
+            public bool PipeToNextCommand { get; set; } = false;
+            public CommandToken PipeSource { get; set; } = null;
+
+            public CommandToken(string command, CommandToken pipeSource)
             {
                 Command = command;
+                PipeSource = pipeSource;
             }
         }
 
@@ -53,10 +56,19 @@ namespace ShellSimulator.Applications
                 {
                     switch (part)
                     {
+                        case "|":
+                            currentCommandToken.PipeToNextCommand = true;
+                            doCommandNext = true;
+                            break;
                         default:
                             if (doCommandNext)
                             {
-                                currentCommandToken = new CommandToken(part); // Create a new command token
+                                CommandToken pipeSource = null;
+
+                                if (currentCommandToken != null && currentCommandToken.PipeToNextCommand)
+                                    pipeSource = currentCommandToken;
+
+                                currentCommandToken = new CommandToken(part, pipeSource); // Create a new command token
                                 tokens.Add(currentCommandToken);
                                 doCommandNext = false;
                             }

@@ -60,24 +60,19 @@ namespace ShellSimulator.Applications
                     case TokenType.Command:
                         if (token is CommandToken command)
                         {
-                            try
+                            if (!command.PipeToNextCommand) // We can skip over it and come back to it later
                             {
-                                int result = ExecuteCommand(command.Command, command.Args, stdout);
+                                int result = ExecuteCommandToken(command, stdout);
 
-                                if (result != 0) return result;
+                                if (result != 0) return result; //We can only continue if the command succeeds
                             }
-                            catch (System.Exception e)
-                            {
-                                Printlnf("Error: {0}", e.Message);
-                                return 1;
-                            }
-                            break;
                         }
                         else
                         {
                             Printlnf("Bash Error: Unkown token received.");
                             return int.MinValue;
                         }
+                        break;
                     default:
                         Printlnf("Bash Error: Unkown token received.");
                         return int.MinValue;
@@ -87,7 +82,40 @@ namespace ShellSimulator.Applications
             return 0;
         }
 
-        private int ExecuteCommand(string command, string[] args, System.IO.TextWriter stdout)
+        private int ExecuteCommandToken(CommandToken command, System.IO.TextWriter stdout)
+        {
+            string startingInput = null;
+
+            if (command.PipeSource != null)
+            {
+                using (System.IO.TextWriter pipeOut = new System.IO.StringWriter())
+                {
+                    int result = ExecuteCommandToken(command.PipeSource, pipeOut);
+
+                    if (result != 0) return result; //We can only continue if the command succeeds
+
+                    startingInput = pipeOut.ToString();
+                }
+            }
+
+            try
+            {
+                if (startingInput != null) Shell.STDIn.WriteToBuffer(startingInput + "\n");
+
+                int result = ExecuteCommand(command.Command, stdout, command.Args);
+
+                if (result != 0) return result;
+            }
+            catch (System.Exception e)
+            {
+                Printlnf("Error: {0}", e.Message);
+                return -1;
+            }
+
+            return 0;
+        }
+
+        private int ExecuteCommand(string command, System.IO.TextWriter stdout, string[] args)
         {
             if (command.Contains('/'))
                 return FileSystem.ExecuteFile(FileSystem.RelativePathToAbsolutePath(command), this, stdout, args);

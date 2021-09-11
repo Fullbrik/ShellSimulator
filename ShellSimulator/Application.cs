@@ -25,7 +25,9 @@ namespace ShellSimulator
             Parent = parent;
             Shell.OnStartProcess(this);
             IsRunning = true;
+
             int result = Main(args);
+
             IsRunning = false;
             Shell.OnEndProcess(this);
             return result;

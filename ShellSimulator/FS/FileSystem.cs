@@ -284,6 +284,12 @@ namespace ShellSimulator.FS
             }
         }
 
+        public bool CanWriteToFile(string path)
+        {
+            var file = GetFile(path);
+            return file.CanWrite;
+        }
+
         public string[] ReadAllFileLines(string path)
         {
             return ReadAllFileText(path).Split('\n');
