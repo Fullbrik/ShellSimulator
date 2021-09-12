@@ -13,8 +13,15 @@ namespace ShellSimulator
         public override int Read()
         {
             if (RequestKey == null) return -1;
-            else if (buffer.Length > 0) { char next = buffer[0]; buffer.Remove(0, 1); return next; } //If we have anything in the buffer, we should use that first.
+            else if (buffer.Length > 0) return PopBuffer(); //If we have anything in the buffer, we should use that first.
             else return RequestKey();
+        }
+
+        private char PopBuffer()
+        {
+            char next = buffer[0];
+            buffer = buffer.Remove(0, 1);
+            return next;
         }
 
         public override string ReadLine()

@@ -58,6 +58,7 @@ namespace ShellSimulator.OS
             fs.InstallApplication("/usr/bin/cat", (s) => new Cat(s));
             fs.InstallApplication("/usr/bin/exit", (s) => new Exit(s));
             fs.InstallApplication("/usr/bin/test", (s) => new Test(s));
+            fs.InstallApplication("/usr/bin/grep", (s) => new Grep(s));
         }
 
         private void CreateHomeDirectory(FileSystem fs)

@@ -55,6 +55,8 @@ namespace ShellSimulator.Applications
 
                     if (isPartFinished)
                     {
+                        Bash.Printlnf("\"{0}\"", current);
+
                         if (!string.IsNullOrWhiteSpace(current)) //Don't add empty buffers
                             parts.Add(current);
 

@@ -1,4 +1,8 @@
-using System;
+#if DEBUG
+//#define CATCH_APPLICATION_ERRORS
+#else
+#define CATCH_APPLICATION_ERRORS //We always want this when not debugging so the library won't crash
+#endif
 
 namespace ShellSimulator.Applications
 {
@@ -98,19 +102,25 @@ namespace ShellSimulator.Applications
                 }
             }
 
+#if CATCH_APPLICATION_ERRORS // We might want the exception thrown when debugging
             try
+#endif
             {
+
                 if (startingInput != null) Shell.STDIn.WriteToBuffer(startingInput + "\n");
 
                 int result = ExecuteCommand(command.Command, stdout, command.Args);
 
                 if (result != 0) return result;
+
             }
+#if CATCH_APPLICATION_ERRORS
             catch (System.Exception e)
             {
                 Printlnf("Error: {0}", e.Message);
                 return -1;
             }
+#endif
 
             return 0;
         }
