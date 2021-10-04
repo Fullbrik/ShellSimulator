@@ -90,6 +90,22 @@ namespace ShellSimulator
         }
         #endregion
 
+        #region File Stuff
+        public abstract char PathSeperator { get; }
+
+        private Dictionary<string, FileSystem> FSRoots = new Dictionary<string, FileSystem>();
+
+        /// <summary>
+        /// Add a root file system. Different operating systems might want to do this differently.
+        /// Unix style operating systems might just have a /, while NT style operating systems might have a differnet prefix for each drive (C:\, D:\, etc.).
+        /// </summary>
+        /// <param name="prefix">The prefix (/, C:\, D:\, etc.).</param>
+        /// <param name="fs">The actual file system it goes to</param>
+        protected void AddRootFS(string prefix, FileSystem fs)
+        {
+            FSRoots.Add(prefix, fs);
+        }
+        #endregion
 
         public virtual void Shutdown()
         {
