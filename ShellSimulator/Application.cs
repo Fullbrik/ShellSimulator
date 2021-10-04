@@ -1,66 +1,123 @@
 using System;
-using ShellSimulator.FS;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace ShellSimulator
 {
     public abstract class Application
     {
-        public bool IsRunning { get; protected set; }
+        public OperatingSystem OS { get; private set; }
+        public Application Parent { get; private set; }
+        public Application PipeTo { get; set; }
 
-        public Shell Shell { get; }
-        public FileSystem FileSystem { get => Shell.FS; }
-
-        public System.IO.TextWriter STDOut { get; set; }
-
-        public Application(Shell shell)
+        public Task<int> Run(OperatingSystem os, Application parent, Application pipeTo, params string[] args)
         {
-            Shell = shell;
-            STDOut = Shell.STDOut;
-        }
-
-        public Application Parent { get; set; }
-
-        public int Start(Application parent, params string[] args)
-        {
+            OS = os;
             Parent = parent;
-            Shell.OnStartProcess(this);
-            IsRunning = true;
+            PipeTo = pipeTo;
 
-            int result = Main(args);
-
-            IsRunning = false;
-            Shell.OnEndProcess(this);
-            return result;
+            try
+            {
+                return Main(args);
+            }
+            catch (Exception e)
+            {
+                PrintF("Exception thrown of type \"{0}\" with message \"{1)\"", e.GetType().Name, e.Message);
+                return Task.Run<int>(() => int.MinValue);
+            }
         }
 
-        protected abstract int Main(string[] args);
+        protected abstract Task<int> Main(string[] args);
 
-        public virtual void Exit() { }
+        #region STDIO
+        private readonly List<char> inBuffer = new List<char>();
 
-        #region STDIO API
-        protected void Printf(string str, params object[] args)
+        /// <summary>
+        /// Write a character to the inBuffer
+        /// </summary>
+        /// <param name="c"></param>
+        private void WriteChar(char c)
         {
-            str = string.Format(str, args); //Format the string first first
-            Shell.STDOut.Write(str);
+            inBuffer.Add(c);
         }
 
-        protected void Printlnf(string str, params object[] args)
+        /// <summary>
+        /// Write a string to the inBuffer
+        /// </summary>
+        /// <param name="s"></param>
+        private void WriteString(string s)
         {
-            if (args.Length > 0)
-                str = string.Format(str, args); //Format the string first if we have any args to format with
-            Shell.STDOut.WriteLine(str);
+            inBuffer.AddRange(s);
         }
 
-        protected string ReadLine()
+        /// <summary>
+        /// Print a character to the Standard Output
+        /// </summary>
+        /// <param name="c"></param>
+        protected void PrintC(char c)
         {
-            return Shell.STDIn.ReadLine();
+            if (PipeTo != null)
+                PipeTo.WriteChar(c);
         }
-        #endregion
 
-        #region Application Management API
-        protected int StartApplication(Application application, params string[] args)
+        /// <summary>
+        /// Print a formatted string to the Standard Output.
+        /// </summary>
+        /// <param name="str">A string to be formatted. Insert arg with {#} (IE: PrintF("Hello {0}!", "World").</param>
+        /// <param name="args">Any variables to insert into the string.</param>
+        protected void PrintF(string str, params object[] args)
         {
-            return application.Start(this, args);
+            str = string.Format(str, args);
+
+            if (PipeTo != null)
+                PipeTo.WriteString(str);
+        }
+
+        /// <summary>
+        /// Print a formatted string to the Standard Output, followed by a new line.
+        /// </summary>
+        /// <param name="str">A string to be formatted. Insert arg with {#} (IE: PrintF("Hello {0}!", "World").</param>
+        /// <param name="args">Any variables to insert into the string.</param>
+        protected void PrintFLN(string str, params object[] args)
+        {
+            str = string.Format(str, args);
+
+            if (PipeTo != null)
+            {
+                PipeTo.WriteString(str);
+                PipeTo.WriteChar('\n');
+            }
+        }
+
+        protected bool IsCharAvailable() => inBuffer.Count > 0;
+
+        protected async Task<char> ReadChar()
+        {
+            while (!IsCharAvailable())
+            {
+                await Task.Delay(1); // Wait until we have something in the buffer
+            }
+
+            // Pop a character off the back of the buffer.
+            char c = inBuffer[0]; // Store it in a variable
+            inBuffer.RemoveAt(0); // Remove it so we don't read it again
+            return c; // Return it
+        }
+
+        protected async Task<string> ReadLine()
+        {
+            while (!IsCharAvailable() || inBuffer[inBuffer.Count - 1] != '\n') // Wait until we have a new line character as the last character in the buffer
+            {
+                await Task.Delay(1);
+            }
+
+            inBuffer.RemoveAt(inBuffer.Count - 1); // Remove the newline from the inBuffer before we turn it into a string.
+
+            string result = new string(inBuffer.ToArray()); // Get the buffer as a string
+
+            inBuffer.Clear(); // Clear the buffer
+
+            return result; // Return the result
         }
         #endregion
     }

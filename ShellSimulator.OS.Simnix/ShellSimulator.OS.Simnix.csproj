@@ -2,11 +2,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ShellSimulator\ShellSimulator.csproj" />
-    <ProjectReference Include="..\ShellSimulator.OS.Simnix\ShellSimulator.OS.Simnix.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
     <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
 
