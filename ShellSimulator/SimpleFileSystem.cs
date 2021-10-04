@@ -1,11 +1,16 @@
 namespace ShellSimulator
 {
-    public class SimpleFileSystem : FileSystem
-    {
-        public SimpleFileSystem(string name, Directory parent) : base(name, parent)
-        {
-        }
+	public class SimpleFileSystem : FileSystem
+	{
+		public SimpleFileSystem(OperatingSystem os, string name, Directory parent) : base(os, name, parent)
+		{
+		}
 
-        public override bool IsReadOnlyFileSystem => false;
-    }
+		public override bool IsReadOnlyFileSystem => false;
+
+		public override void OnMount()
+		{
+
+		}
+	}
 }

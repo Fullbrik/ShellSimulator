@@ -3,30 +3,24 @@ using System.Linq;
 
 namespace ShellSimulator
 {
-    public class Directory
-    {
-        public string Name { get; }
-        public Directory Parent { get; }
-        public virtual FileSystem OwningFileSystem { get => Parent.OwningFileSystem; }
+	public abstract class FileSystem : Directory
+	{
+		public OperatingSystem OS { get; }
 
-        public virtual string[] SubDirectories { get => subDirectories.Keys.ToArray(); }
-        private readonly Dictionary<string, Directory> subDirectories = new Dictionary<string, Directory>();
+		protected FileSystem(OperatingSystem os, string name, Directory parent) : base(name, parent)
+		{
+			OS = os;
+		}
 
-        public Directory(string name, Directory parent)
-        {
-            Name = name;
-            Parent = parent;
-        }
-    }
+		public override FileSystem OwningFileSystem => this;
 
-    public abstract class FileSystem : Directory
-    {
-        protected FileSystem(string name, Directory parent) : base(name, parent)
-        {
-        }
+		public abstract bool IsReadOnlyFileSystem { get; }
 
-        public override FileSystem OwningFileSystem => this;
+		public bool IsRootFS { get => !string.IsNullOrEmpty(RootPrefix); }
+		public string RootPrefix { get; set; } = null;
 
-        public abstract bool IsReadOnlyFileSystem { get; }
-    }
+		public override string FullPath => IsRootFS ? RootPrefix : base.FullPath;
+
+		public abstract void OnMount();
+	}
 }

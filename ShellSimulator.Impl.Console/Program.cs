@@ -6,95 +6,109 @@ using OperatingSystem = ShellSimulator.OperatingSystem;
 
 class ConsoleKeyboard : ShellSimulator.Hardware.Keyboard
 {
-    public async override void OnConnect(OperatingSystem os)
-    {
-        while (true || os.IsRunning)
-        {
-            await Task.Run(() =>
-            {
-                var key = Console.ReadKey(true);
-                KeyPressed(key);
-            });
-        }
-    }
+	public async override void OnConnect(OperatingSystem os)
+	{
+		while (true || os.IsRunning)
+		{
+			await Task.Run(() =>
+			{
+				var key = Console.ReadKey(true);
+				KeyPressed(key);
+			});
+		}
+	}
 }
 
 class ConsoleTerminal : ShellSimulator.Hardware.Terminal
 {
-    int cursorPositionX = 0;
-    int cursorPositionY = 0;
+	int cursorPositionX = 0;
+	int cursorPositionY = 0;
 
-    public override int GetTerminalHeight()
-    {
-        return Console.WindowHeight;
-    }
+	public override int GetTerminalHeight()
+	{
+		return Console.WindowHeight;
+	}
 
-    public override int GetTerminalWidth()
-    {
-        return Console.WindowWidth;
-    }
+	public override int GetTerminalWidth()
+	{
+		return Console.WindowWidth;
+	}
 
-    public override void OnConnect(OperatingSystem os)
-    {
-        Console.Clear();
-    }
+	public override void OnConnect(OperatingSystem os)
+	{
+		Console.Clear();
+	}
 
-    public override void SetCharacterUnderCursor(char c)
-    {
-        Console.Write(c);
-        ResetCursor();
-    }
+	public override void SetCharacterUnderCursor(char c)
+	{
+		Console.Write(c);
+		ResetCursor();
+	}
 
-    public override void SetCursorPosition(int x, int y)
-    {
-        cursorPositionX = x;
-        cursorPositionY = y;
-        ResetCursor();
-    }
+	public override void SetCursorPosition(int x, int y)
+	{
+		cursorPositionX = x;
+		cursorPositionY = y;
+		ResetCursor();
+	}
 
-    private void ResetCursor()
-    {
-        Console.SetCursorPosition(cursorPositionX, cursorPositionY);
-    }
+	private void ResetCursor()
+	{
+		Console.SetCursorPosition(cursorPositionX, cursorPositionY);
+	}
 }
 
 class TestApp : Application
 {
-    protected async override Task<int> Main(string[] args)
-    {
-        PrintFLN("Hello World!");
+	protected async override Task<int> Main(string[] args)
+	{
+		PrintFLN("Hello World!");
 
-        PrintF("Whats your name?: ");
-        string name = await ReadLine();
+		PrintF("Whats your name?: ");
+		string name = await ReadLine();
 
-        PrintFLN("Hi {0}!", name);
+		PrintFLN("Hi {0}!", name);
 
-        return 0;
-    }
+		return 0;
+	}
 }
 
 static class Program
 {
-    static void Main(string[] args)
-    {
-        SimnixOS os = new SimnixOS();
+	static void Main(string[] args)
+	{
+		SimnixOS os = new SimnixOS();
 
-        os.ConnectDevice(new ConsoleKeyboard());
-        os.ConnectDevice(new ConsoleTerminal());
+		os.ConnectDevice(new ConsoleKeyboard());
+		os.ConnectDevice(new ConsoleTerminal());
 
-        os.Install();
+		os.Install();
 
-        os.Run().Wait();
+		PrintAllSubDirectories(os, "/", "");
 
-        //TestApp app = new TestApp();
-        //var appTask = os.StartApplication(app, null, td);
+		os.Run().Wait();
 
-        //td.PipeTo = app;
+		//TestApp app = new TestApp();
+		//var appTask = os.StartApplication(app, null, td);
 
-        //appTask.Wait();
+		//td.PipeTo = app;
 
-        //td.PipeTo = null;
+		//appTask.Wait();
 
-        os.Shutdown();
-    }
+		//td.PipeTo = null;
+
+		os.Shutdown();
+	}
+
+	private static void PrintAllSubDirectories(OperatingSystem os, string currentPath, string depth)
+	{
+		var dirs = os.GetAllSubDirectories(currentPath);
+
+		Console.WriteLine(depth + currentPath);
+
+		foreach (var dir in dirs)
+		{
+			PrintAllSubDirectories(os, currentPath + dir + "/", depth + "\t");
+		}
+	}
 }
