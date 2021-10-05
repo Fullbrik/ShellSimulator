@@ -60,6 +60,8 @@ class ConsoleTerminal : ShellSimulator.Hardware.Terminal
 
 class TestApp : Application
 {
+	public override string Name => "Test";
+
 	protected async override Task<int> Main(string[] args)
 	{
 		PrintFLN("Hello World!");
@@ -84,9 +86,13 @@ static class Program
 
 		os.Install();
 
-		PrintAllSubDirectories(os, "/", "");
+		var file = os.OpenFile("/home/hello.txt", null);
+		file.WriteAllText("Hello World!");
+		file.Close(null);
 
-		os.Run().Wait();
+		var task = os.Run();
+
+		PrintAllSubDirectories(os, "/", "");
 
 		//TestApp app = new TestApp();
 		//var appTask = os.StartApplication(app, null, td);
@@ -97,18 +103,26 @@ static class Program
 
 		//td.PipeTo = null;
 
+		task.Wait();
+
 		os.Shutdown();
 	}
 
 	private static void PrintAllSubDirectories(OperatingSystem os, string currentPath, string depth)
 	{
 		var dirs = os.GetAllSubDirectories(currentPath);
+		var files = os.GetAllFilesInDirectory(currentPath);
 
 		Console.WriteLine(depth + currentPath);
 
 		foreach (var dir in dirs)
 		{
 			PrintAllSubDirectories(os, currentPath + dir + "/", depth + "\t");
+		}
+
+		foreach (var file in files)
+		{
+			Console.WriteLine(depth + "\t" + currentPath + file);
 		}
 	}
 }

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -13,11 +14,16 @@ namespace ShellSimulator
 		public virtual string[] SubDirectories { get => subDirectories.Keys.ToArray(); }
 		private readonly Dictionary<string, Directory> subDirectories = new Dictionary<string, Directory>();
 
+		public virtual string[] Files { get => files.Keys.ToArray(); }
+		private readonly Dictionary<string, File> files = new Dictionary<string, File>();
+
 		public Directory(string name, Directory parent)
 		{
 			Name = name;
 			Parent = parent;
 		}
+
+		#region Directory
 
 		public virtual bool HasSubDirectory(string name)
 		{
@@ -36,12 +42,17 @@ namespace ShellSimulator
 			}
 		}
 
-		private bool IsValidDirectoryName(string name, bool canAlreadyExist)
+		private bool IsValidName(string name, bool canAlreadyExist)
 		{
 			return
 				!name.Contains(OwningFileSystem.OS.PathSeperator) // Can't have a path separater.
-				&& (canAlreadyExist || !subDirectories.ContainsKey(name)) // If we don't want to allow directories that already exist, we filter them out.
+				&& (canAlreadyExist || !(subDirectories.ContainsKey(name) || files.ContainsKey(name))) // If we don't want to allow directories that already exist, we filter them out.
 			;
+		}
+
+		private bool IsValidDirectoryName(string name, bool canAlreadyExist)
+		{
+			return IsValidName(name, canAlreadyExist);
 		}
 
 		public virtual Directory MakeDirectory(string name)
@@ -89,5 +100,53 @@ namespace ShellSimulator
 				throw new ReadOnlyFileSystemException();
 			}
 		}
+		#endregion
+
+		#region File
+
+		private bool IsValidFileName(string name, bool canAlreadyExist)
+		{
+			return IsValidName(name, canAlreadyExist);
+		}
+
+		public virtual File GetFile(string name)
+		{
+			if (HasFile(name))
+			{
+				return files[name];
+			}
+			else
+			{
+				throw new FileNotFoundException(name, this);
+			}
+		}
+
+		public virtual File CreateFile(string name, Func<string, Directory, File> fileBuilder)
+		{
+			if (!OwningFileSystem.IsReadOnlyFileSystem) // Make sure we can write to the file system
+			{
+				if (IsValidFileName(name, false))
+				{
+					var file = fileBuilder(name, this);
+					files.Add(name, file);
+					return file;
+				}
+				else
+				{
+					throw new InvalidFileNameException();
+				}
+			}
+			else
+			{
+				throw new ReadOnlyFileSystemException();
+			}
+		}
+
+		public virtual bool HasFile(string name)
+		{
+			return files.ContainsKey(name);
+		}
+
+		#endregion
 	}
 }

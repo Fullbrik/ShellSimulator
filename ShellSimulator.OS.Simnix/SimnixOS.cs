@@ -14,6 +14,7 @@ namespace ShellSimulator.OS.Simnix
 			RootFS = new SimpleFileSystem(this, "/", null);
 			AddRootFS("/", RootFS);
 
+			MakeDirectory("/bin");
 			MakeDirectory("/home");
 			MakeDirectory("/tmp");
 			MakeDirectory("/opt");
@@ -29,6 +30,8 @@ namespace ShellSimulator.OS.Simnix
 		protected async override Task Init()
 		{
 			StartDaemon(new TerminalDaemon());
+
+			await Task.Yield();
 		}
 	}
 }

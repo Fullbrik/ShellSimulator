@@ -51,6 +51,7 @@ namespace ShellSimulator
 		#endregion
 
 		#region Processes
+		public Application[] Processes { get => processes.ToArray(); }
 		private readonly List<Application> processes = new List<Application>();
 		private readonly Dictionary<Daemon, Task> daemons = new Dictionary<Daemon, Task>();
 
@@ -132,6 +133,29 @@ namespace ShellSimulator
 			var directory = GetDirectory(path, false, false, out string last);
 
 			return directory.SubDirectories;
+		}
+
+		public string[] GetAllFilesInDirectory(string path)
+		{
+			var directory = GetDirectory(path, false, false, out string last);
+
+			return directory.Files;
+		}
+
+		public File OpenFile(string path, Application from)
+		{
+			var directory = GetDirectory(path, false, true, out string last);
+
+			File file = null;
+
+			if (directory.HasFile(last))
+				file = directory.GetFile(last);
+			else
+				file = directory.CreateFile(last, (name, dir) => new TextFile(name, dir));
+
+			file.Open(from); // This function is called open file, so open it.
+
+			return file;
 		}
 
 		private Directory GetDirectory(string path, bool createMissing, bool ignoreLast, out string last)

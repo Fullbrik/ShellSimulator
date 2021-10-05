@@ -1,3 +1,5 @@
+using System.Linq;
+
 namespace ShellSimulator.OS.Simnix
 {
 	public class ProcessFileSystem : FileSystem
@@ -12,5 +14,7 @@ namespace ShellSimulator.OS.Simnix
 		{
 
 		}
+
+		public override string[] Files => OS.Processes.Select(proc => proc.Name).ToArray();
 	}
 }

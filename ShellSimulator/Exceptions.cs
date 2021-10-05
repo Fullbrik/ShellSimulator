@@ -27,4 +27,10 @@ namespace ShellSimulator
 	{
 		public DirectoryNotFoundException(string name, Directory parent) : base($"Unable to find directory {name} in directory {parent.FullPath}") { }
 	}
+
+	[System.Serializable]
+	public class FileNotFoundException : System.Exception
+	{
+		public FileNotFoundException(string name, Directory parent) : base($"Unable to find file {name} in directory {parent.FullPath}") { }
+	}
 }
