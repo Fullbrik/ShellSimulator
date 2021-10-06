@@ -26,13 +26,22 @@ namespace ShellSimulator
 
 		void UpdateCursor()
 		{
-			if (cursorX >= terminal.GetTerminalWidth())
+			if (cursorX < 0)
+			{
+				cursorX = 0;
+				cursorY--;
+			}
+			else if (cursorX >= terminal.GetTerminalWidth())
 			{
 				cursorX = 0;
 				cursorY++;
 			}
 
-			if (cursorY >= terminal.GetTerminalHeight())
+			if (cursorY < 0)
+			{
+				cursorY = 0;
+			}
+			else if (cursorY >= terminal.GetTerminalHeight())
 			{
 				// I will implement scrolling later
 				throw new System.NotImplementedException();
@@ -63,7 +72,12 @@ namespace ShellSimulator
 			if (e.KeyInfo.Key == System.ConsoleKey.Backspace)
 			{
 				// Backspace
-				throw new System.NotImplementedException();
+				if (PrintBackspace()) // Skip if there is nothing to backspace in the buffer.
+				{
+					cursorX--;
+					UpdateCursor();
+					terminal.SetCharacterUnderCursor(' ');
+				}
 			}
 			else if (e.KeyInfo.Key == System.ConsoleKey.Enter)
 			{

@@ -53,13 +53,40 @@ namespace ShellSimulator
 		}
 
 		/// <summary>
+		/// Remove the last character on the buffer
+		/// </summary>
+		private bool Backspace()
+		{
+			if (inBuffer.Count > 0)
+			{
+				inBuffer.RemoveAt(inBuffer.Count - 1);
+				return true;
+			}
+			else
+			{
+				return false;
+			}
+		}
+
+		/// <summary>
 		/// Print a character to the Standard Output
 		/// </summary>
 		/// <param name="c"></param>
 		protected void PrintC(char c)
 		{
 			if (PipeTo != null)
-				PipeTo.WriteChar(c);
+				if (c == 0x08) // If we do a backspace character
+					PipeTo.Backspace();
+				else
+					PipeTo.WriteChar(c);
+		}
+
+		protected bool PrintBackspace()
+		{
+			if (PipeTo != null)
+				return PipeTo.Backspace();
+			else
+				return false;
 		}
 
 		/// <summary>

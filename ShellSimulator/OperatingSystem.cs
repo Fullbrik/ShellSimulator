@@ -59,9 +59,9 @@ namespace ShellSimulator
 		{
 			if (application == null) throw new NullReferenceException("Application was null");
 
-			var task = application.Run(this, parent, pipeTo, args); // Run the application
-
 			processes.Add(application); // Add the process to the list
+
+			var task = application.Run(this, parent, pipeTo, args); // Run the application
 
 			int result = await task; // Wait until we get a result
 
@@ -76,10 +76,11 @@ namespace ShellSimulator
 			if (daemon == null) throw new NullReferenceException("Daemon was null");
 			if (daemon.IsRunning) throw new Exception("Daemon is already running");
 
-			var task = daemon.Run(this, null, null, args); // Run the daemon and get it's Task. This lets us wait for it later
-
 			// Add the daemon to the process list and daemon list
 			processes.Add(daemon);
+
+			var task = daemon.Run(this, null, null, args); // Run the daemon and get it's Task. This lets us wait for it later
+
 			daemons.Add(daemon, task);
 
 			// Remove the daemon when it is done
@@ -88,6 +89,12 @@ namespace ShellSimulator
 				processes.Remove(daemon);
 				daemons.Remove(daemon);
 			});
+		}
+
+		public T GetDaemon<T>()
+			where T : Daemon
+		{
+			return daemons.FirstOrDefault((kvp) => kvp.Key is T).Key as T;
 		}
 		#endregion
 

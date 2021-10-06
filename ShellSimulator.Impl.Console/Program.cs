@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using ShellSimulator;
 using ShellSimulator.OS.Simnix;
@@ -64,6 +65,12 @@ class TestApp : Application
 
 	protected async override Task<int> Main(string[] args)
 	{
+		PrintAllSubDirectories(OS, "/", "");
+
+		//await Task.Delay(1);
+
+		PrintFLN(string.Join(',', OS.Processes.Select((p) => p.Name)));
+
 		PrintFLN("Hello World!");
 
 		PrintF("Whats your name?: ");
@@ -71,7 +78,27 @@ class TestApp : Application
 
 		PrintFLN("Hi {0}!", name);
 
+		await ReadLine();
+
 		return 0;
+	}
+
+	private void PrintAllSubDirectories(OperatingSystem os, string currentPath, string depth)
+	{
+		var dirs = os.GetAllSubDirectories(currentPath);
+		var files = os.GetAllFilesInDirectory(currentPath);
+
+		PrintFLN(depth + currentPath);
+
+		foreach (var dir in dirs)
+		{
+			PrintAllSubDirectories(os, currentPath + dir + "/", depth + "\t");
+		}
+
+		foreach (var file in files)
+		{
+			PrintFLN(depth + "\t" + currentPath + file);
+		}
 	}
 }
 
@@ -92,37 +119,21 @@ static class Program
 
 		var task = os.Run();
 
-		PrintAllSubDirectories(os, "/", "");
+		var deamon = os.GetDaemon<TerminalDaemon>();
 
-		//TestApp app = new TestApp();
-		//var appTask = os.StartApplication(app, null, td);
+		TestApp app = new TestApp();
+		var appTask = os.StartApplication(app, null, deamon);
 
-		//td.PipeTo = app;
+		deamon.PipeTo = app;
 
-		//appTask.Wait();
+		appTask.Wait();
 
-		//td.PipeTo = null;
+		deamon.PipeTo = null;
 
 		task.Wait();
 
 		os.Shutdown();
 	}
 
-	private static void PrintAllSubDirectories(OperatingSystem os, string currentPath, string depth)
-	{
-		var dirs = os.GetAllSubDirectories(currentPath);
-		var files = os.GetAllFilesInDirectory(currentPath);
 
-		Console.WriteLine(depth + currentPath);
-
-		foreach (var dir in dirs)
-		{
-			PrintAllSubDirectories(os, currentPath + dir + "/", depth + "\t");
-		}
-
-		foreach (var file in files)
-		{
-			Console.WriteLine(depth + "\t" + currentPath + file);
-		}
-	}
 }
