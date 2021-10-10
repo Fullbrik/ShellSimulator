@@ -25,6 +25,8 @@ class ConsoleTerminal : ShellSimulator.Hardware.Terminal
 	int cursorPositionX = 0;
 	int cursorPositionY = 0;
 
+	public override bool SupportsBufferCopying => true;
+
 	public override int GetTerminalHeight()
 	{
 		return Console.WindowHeight;
@@ -57,6 +59,11 @@ class ConsoleTerminal : ShellSimulator.Hardware.Terminal
 	{
 		Console.SetCursorPosition(cursorPositionX, cursorPositionY);
 	}
+
+	public override void CopyBuffer(int sourceX, int sourceY, int sourceWidth, int sourceHeight, int targetX, int targetY)
+	{
+		Console.MoveBufferArea(sourceX, sourceY, sourceWidth, sourceHeight, targetX, targetY);
+	}
 }
 
 class TestApp : Application
@@ -78,7 +85,22 @@ class TestApp : Application
 
 		PrintFLN("Hi {0}!", name);
 
-		await ReadLine();
+		string fileText = await ReadLine();
+
+		var file = OS.OpenFile("/usr/text.txt", this);
+		file.SetReadPosition(0);
+		file.WriteAllText(fileText);
+		file.Close(this);
+
+		file = OS.OpenFile("/usr/text.txt", this);
+		file.SetReadPosition(0);
+		var text = file.ReadAllText();
+
+		PrintFLN(text);
+
+		PrintFLN("");
+
+		PrintAllSubDirectories(OS, "/", "");
 
 		return 0;
 	}

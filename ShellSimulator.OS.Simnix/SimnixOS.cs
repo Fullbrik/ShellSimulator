@@ -25,6 +25,8 @@ namespace ShellSimulator.OS.Simnix
 			MakeDirectory("/usr/local");
 
 			MountFS("/proc", (os, name, parent) => new ProcessFileSystem(os, name, parent));
+
+			InstallApplication<TerminalDaemon>("/bin/terminald");
 		}
 
 		protected async override Task Init()

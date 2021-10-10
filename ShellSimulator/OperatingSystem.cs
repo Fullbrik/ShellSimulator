@@ -165,6 +165,21 @@ namespace ShellSimulator
 			return file;
 		}
 
+		public void InstallApplication<T>(string path)
+			where T : Application, new()
+		{
+			var directory = GetDirectory(path, false, true, out string last);
+
+			if (!directory.HasFile(last)) // We can't install the application if it already exists.
+			{
+				directory.CreateFile(last, (name, dir) => new ApplicationFile<T>(name, dir));
+			}
+			else
+			{
+				throw new FieldAccessException();
+			}
+		}
+
 		private Directory GetDirectory(string path, bool createMissing, bool ignoreLast, out string last)
 		{
 			last = null; // If we don't ignore last, we don't need to provide a last.

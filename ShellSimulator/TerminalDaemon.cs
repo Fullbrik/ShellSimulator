@@ -41,10 +41,19 @@ namespace ShellSimulator
 			{
 				cursorY = 0;
 			}
-			else if (cursorY >= terminal.GetTerminalHeight())
+			else if (cursorY >= terminal.GetTerminalHeight()) // Scroll the terminal
 			{
-				// I will implement scrolling later
-				throw new System.NotImplementedException();
+				//If our terminal supports copying the buffer, we can just use that. It will be faster than manually copying the buffer
+				if (terminal.SupportsBufferCopying)
+				{
+					terminal.CopyBuffer(0, 1, terminal.GetTerminalWidth(), terminal.GetTerminalHeight(), 0, 0);
+					cursorY = terminal.GetTerminalHeight() - 1;
+				}
+				else
+				{
+					// I will implement scrolling later
+					throw new System.NotImplementedException();
+				}
 			}
 
 			terminal.SetCursorPosition(cursorX, cursorY);
