@@ -3,138 +3,129 @@ using ShellSimulator.Hardware;
 
 namespace ShellSimulator
 {
-	/// <summary>
-	/// This class does a few things:
-	/// <list type="number"> 
-	/// <item>Takes a programs STDOut, and renders it on a terminal window.</item>
-	/// <item>Sends data from a keyboard to a application. </item>
-	/// </list>
-	/// </summary>
-	public class TerminalDaemon : Daemon
-	{
-		public override bool IsRunning => isRunning;
+    /// <summary>
+    /// This class does a few things:
+    /// <list type="number"> 
+    /// <item>Takes a programs STDOut, and renders it on a terminal window.</item>
+    /// <item>Sends data from a keyboard to a application. </item>
+    /// </list>
+    /// </summary>
+    public class TerminalDaemon : Daemon
+    {
+        public override bool IsRunning => isRunning;
 
-		public override string Name => "Terminal Daemon";
+        public override string Name => "Terminal Daemon";
 
-		private bool isRunning = false;
+        private bool isRunning = false;
 
-		Terminal terminal;
-		Keyboard keyboard;
+        Terminal terminal;
+        Keyboard keyboard;
 
-		int cursorX;
-		int cursorY;
+        int cursorX;
+        int cursorY;
 
-		void UpdateCursor()
-		{
-			if (cursorX < 0)
-			{
-				cursorX = 0;
-				cursorY--;
-			}
-			else if (cursorX >= terminal.GetTerminalWidth())
-			{
-				cursorX = 0;
-				cursorY++;
-			}
+        void UpdateCursor()
+        {
+            if (cursorX < 0)
+            {
+                cursorX = 0;
+                cursorY--;
+            }
+            else if (cursorX > terminal.GetTerminalWidth() - 1) // New line from overflow
+            {
+                cursorX = 0;
+                cursorY++;
+            }
 
-			if (cursorY < 0)
-			{
-				cursorY = 0;
-			}
-			else if (cursorY >= terminal.GetTerminalHeight()) // Scroll the terminal
-			{
-				//If our terminal supports copying the buffer, we can just use that. It will be faster than manually copying the buffer
-				if (terminal.SupportsBufferCopying)
-				{
-					terminal.CopyBuffer(0, 1, terminal.GetTerminalWidth(), terminal.GetTerminalHeight(), 0, 0);
-					cursorY = terminal.GetTerminalHeight() - 1;
-				}
-				else
-				{
-					// I will implement scrolling later
-					throw new System.NotImplementedException();
-				}
-			}
+            if (cursorY < 0)
+            {
+                cursorY = 0;
+            }
+            else if (cursorY > terminal.GetTerminalHeight() - 1) // Scroll the terminal
+            {
+                terminal.ScrollLine();
+                cursorY = terminal.GetTerminalHeight() - 1;
+            }
 
-			terminal.SetCursorPosition(cursorX, cursorY);
-		}
+            terminal.SetCursorPosition(cursorX, cursorY);
+        }
 
 
-		protected async override Task<int> Main(string[] args)
-		{
-			isRunning = true;
+        protected async override Task<int> Main(string[] args)
+        {
+            isRunning = true;
 
-			terminal = OS.GetDevice<Terminal>();
-			keyboard = OS.GetDevice<Keyboard>();
+            terminal = OS.GetDevice<Terminal>();
+            keyboard = OS.GetDevice<Keyboard>();
 
-			keyboard.OnKeyPressed += OnKeyboardKeyPressed;
+            keyboard.OnKeyPressed += OnKeyboardKeyPressed;
 
-			await ManageTerminal(); // Will run until a stop is requested
+            await ManageTerminal(); // Will run until a stop is requested
 
-			keyboard.OnKeyPressed -= OnKeyboardKeyPressed; // Unbind so no memory leak. Memory leak is allegedly bad or something.
+            keyboard.OnKeyPressed -= OnKeyboardKeyPressed; // Unbind so no memory leak. Memory leak is allegedly bad or something.
 
-			return 0;
-		}
+            return 0;
+        }
 
-		private void OnKeyboardKeyPressed(object sender, KeyboardKeyPressedEventArgs e)
-		{
-			if (e.KeyInfo.Key == System.ConsoleKey.Backspace)
-			{
-				// Backspace
-				if (PrintBackspace()) // Skip if there is nothing to backspace in the buffer.
-				{
-					cursorX--;
-					UpdateCursor();
-					terminal.SetCharacterUnderCursor(' ');
-				}
-			}
-			else if (e.KeyInfo.Key == System.ConsoleKey.Enter)
-			{
-				terminal.SetCharacterUnderCursor(' ');
-				cursorX = 0;
-				cursorY++;
-				UpdateCursor();
+        private void OnKeyboardKeyPressed(object sender, KeyboardKeyPressedEventArgs e)
+        {
+            if (e.KeyInfo.Key == System.ConsoleKey.Backspace)
+            {
+                // Backspace
+                if (PrintBackspace()) // Skip if there is nothing to backspace in the buffer.
+                {
+                    cursorX--;
+                    UpdateCursor();
+                    terminal.SetCharacterUnderCursor(' ');
+                }
+            }
+            else if (e.KeyInfo.Key == System.ConsoleKey.Enter)
+            {
+                terminal.SetCharacterUnderCursor(' ');
+                cursorX = 0;
+                cursorY++;
+                UpdateCursor();
 
-				PrintC('\n');
-			}
-			else
-			{
-				terminal.SetCharacterUnderCursor(e.KeyInfo.KeyChar);
-				cursorX++;
-				UpdateCursor();
+                PrintC('\n');
+            }
+            else
+            {
+                terminal.SetCharacterUnderCursor(e.KeyInfo.KeyChar);
+                cursorX++;
+                UpdateCursor();
 
-				PrintC(e.KeyInfo.KeyChar);
-			}
-		}
+                PrintC(e.KeyInfo.KeyChar);
+            }
+        }
 
-		private async Task ManageTerminal()
-		{
-			while (IsRunning)
-			{
-				await Task.Delay(1); // This fixes bugs. Leave it in please!
+        private async Task ManageTerminal()
+        {
+            while (IsRunning)
+            {
+                await Task.Delay(1); // This fixes bugs. Leave it in please!
 
-				while (IsCharAvailable())
-				{
-					char c = await ReadChar();
+                while (IsCharAvailable())
+                {
+                    char c = await ReadChar();
 
-					if (c == '\n')
-					{
-						cursorX = 0;
-						cursorY++;
-					}
-					else
-					{
-						terminal.SetCharacterUnderCursor(c);
-						cursorX++;
-					}
-					UpdateCursor();
-				}
-			}
-		}
+                    if (c == '\n')
+                    {
+                        cursorX = 0;
+                        cursorY++;
+                    }
+                    else
+                    {
+                        terminal.SetCharacterUnderCursor(c);
+                        cursorX++;
+                    }
+                    UpdateCursor();
+                }
+            }
+        }
 
-		public override void RequestStop()
-		{
-			isRunning = false;
-		}
-	}
+        public override void RequestStop()
+        {
+            isRunning = false;
+        }
+    }
 }
