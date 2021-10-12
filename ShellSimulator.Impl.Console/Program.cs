@@ -8,97 +8,80 @@ using OperatingSystem = ShellSimulator.OperatingSystem;
 
 class TestApp : Application
 {
-    public override string Name => "Test";
+	public override string Name => "Test";
 
-    protected async override Task<int> Main(string[] args)
-    {
-        //PrintAllSubDirectories(OS, "/", "");
+	protected async override Task<int> Main(string[] args)
+	{
+		//PrintAllSubDirectories(OS, "/", "");
 
-        //PrintFLN(string.Join(',', OS.Processes.Select((p) => p.Name)));
+		//PrintFLN(string.Join(',', OS.Processes.Select((p) => p.Name)));
 
-        //PrintFLN("Hello World!");
+		//PrintFLN("Hello World!");
 
-        //PrintF("Whats your name?: ");
-        //string name = await ReadLine();
+		//PrintF("Whats your name?: ");
+		//string name = await ReadLine();
 
-        //PrintFLN("Hi {0}!", name);
+		//PrintFLN("Hi {0}!", name);
 
-        // string fileText = await ReadLine();
+		// string fileText = await ReadLine();
 
-        // var file = OS.OpenFile("/usr/text.txt", this);
-        // file.SetReadPosition(0);
-        // file.WriteAllText(fileText);
-        // file.Close(this);
+		// var file = OS.OpenFile("/usr/text.txt", this);
+		// file.SetReadPosition(0);
+		// file.WriteAllText(fileText);
+		// file.Close(this);
 
-        // file = OS.OpenFile("/usr/text.txt", this);
-        // file.SetReadPosition(0);
-        // var text = file.ReadAllText();
+		// file = OS.OpenFile("/usr/text.txt", this);
+		// file.SetReadPosition(0);
+		// var text = file.ReadAllText();
 
-        //PrintFLN(text);
+		//PrintFLN(text);
 
-        //PrintFLN("");
+		//PrintFLN("");
 
-        //PrintAllSubDirectories(OS, "/", "");
+		//PrintAllSubDirectories(OS, "/", "");
 
-        for (int i = 0; i < 200; i++)
-        {
-            PrintC(i.ToString().Last());
-        }
+		for (int i = 0; i < 200; i++)
+		{
+			PrintC(i.ToString().Last());
+		}
 
-        return 0;
-    }
+		return 0;
+	}
 
-    private void PrintAllSubDirectories(OperatingSystem os, string currentPath, string depth)
-    {
-        var dirs = os.GetAllSubDirectories(currentPath);
-        var files = os.GetAllFilesInDirectory(currentPath);
+	private void PrintAllSubDirectories(OperatingSystem os, string currentPath, string depth)
+	{
+		var dirs = os.GetAllSubDirectories(currentPath);
+		var files = os.GetAllFilesInDirectory(currentPath);
 
-        PrintFLN(depth + currentPath);
+		PrintFLN(depth + currentPath);
 
-        foreach (var dir in dirs)
-        {
-            PrintAllSubDirectories(os, currentPath + dir + "/", depth + "\t");
-        }
+		foreach (var dir in dirs)
+		{
+			PrintAllSubDirectories(os, currentPath + dir + "/", depth + "\t");
+		}
 
-        foreach (var file in files)
-        {
-            PrintFLN(depth + "\t" + currentPath + file);
-        }
-    }
+		foreach (var file in files)
+		{
+			PrintFLN(depth + "\t" + currentPath + file);
+		}
+	}
 }
 
 static class Program
 {
-    static void Main(string[] args)
-    {
-        SimnixOS os = new SimnixOS();
+	static void Main(string[] args)
+	{
+		SimnixOS os = new SimnixOS();
 
-        os.ConnectDevice(new ConsoleKeyboard());
-        os.ConnectDevice(new ConsoleTerminal());
+		os.Install();
 
-        os.Install();
+		os.ConnectDevice(new ConsoleKeyboard());
+		os.ConnectDevice(new ConsoleTerminal());
 
-        var file = os.OpenFile("/home/hello.txt", null);
-        file.WriteAllText("Hello World!");
-        file.Close(null);
+		os.Run().Wait();
 
-        var task = os.Run();
-
-        var deamon = os.GetDaemon<TerminalDaemon>();
-
-        TestApp app = new TestApp();
-        var appTask = os.StartApplication(app, null, deamon);
-
-        deamon.PipeTo = app;
-
-        appTask.Wait();
-
-        deamon.PipeTo = null;
-
-        task.Wait();
-
-        os.Shutdown();
-    }
+		//os.Shutdown();
+	}
 
 
 }

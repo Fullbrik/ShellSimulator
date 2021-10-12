@@ -3,64 +3,78 @@ using System.Threading.Tasks;
 
 namespace ShellSimulator.Impl.Console
 {
-    public class ConsoleKeyboard : ShellSimulator.Hardware.Keyboard
-    {
-        public async override void OnConnect(OperatingSystem os)
-        {
-            while (true || os.IsRunning)
-            {
-                await Task.Run(() =>
-                {
-                    var key = System.Console.ReadKey(true);
-                    KeyPressed(key);
-                });
-            }
-        }
-    }
+	public class ConsoleKeyboard : ShellSimulator.Hardware.Keyboard
+	{
+		public override void OnConnect(OperatingSystem os)
+		{
 
-    public class ConsoleTerminal : ShellSimulator.Hardware.Terminal
-    {
-        int cursorPositionX = 0;
-        int cursorPositionY = 0;
+		}
 
-        public override int GetTerminalHeight()
-        {
-            return System.Console.WindowHeight;
-        }
+		public async override void OnStart(OperatingSystem os)
+		{
+			while (os.IsRunning)
+			{
+				await Task.Run(() =>
+				{
+					var key = System.Console.ReadKey(true);
+					KeyPressed(key);
+				});
+			}
+		}
+	}
 
-        public override int GetTerminalWidth()
-        {
-            return System.Console.WindowWidth;
-        }
+	public class ConsoleTerminal : ShellSimulator.Hardware.Terminal
+	{
+		int cursorPositionX = 0;
+		int cursorPositionY = 0;
 
-        public override void OnConnect(OperatingSystem os)
-        {
-            System.Console.Clear();
-        }
+		public override void Clear()
+		{
+			System.Console.Clear();
+		}
 
-        public override void ScrollLine()
-        {
-            System.Console.SetCursorPosition(System.Console.BufferWidth, System.Console.BufferHeight);
-            System.Console.WriteLine();
-            ResetCursor();
-        }
+		public override int GetTerminalHeight()
+		{
+			return System.Console.WindowHeight;
+		}
 
-        public override void SetCharacterUnderCursor(char c)
-        {
-            System.Console.Write(c);
-            ResetCursor();
-        }
+		public override int GetTerminalWidth()
+		{
+			return System.Console.WindowWidth;
+		}
 
-        public override void SetCursorPosition(int x, int y)
-        {
-            cursorPositionX = x;
-            cursorPositionY = y;
-            ResetCursor();
-        }
+		public override void OnConnect(OperatingSystem os)
+		{
+		}
 
-        private void ResetCursor()
-        {
-            System.Console.SetCursorPosition(cursorPositionX, cursorPositionY);
-        }
-    }
+		public override void OnStart(OperatingSystem os)
+		{
+			System.Console.Clear();
+		}
+
+		public override void ScrollLine()
+		{
+			System.Console.SetCursorPosition(System.Console.BufferWidth, System.Console.BufferHeight);
+			System.Console.WriteLine();
+			ResetCursor();
+		}
+
+		public override void SetCharacterUnderCursor(char c)
+		{
+			System.Console.Write(c);
+			ResetCursor();
+		}
+
+		public override void SetCursorPosition(int x, int y)
+		{
+			cursorPositionX = x;
+			cursorPositionY = y;
+			ResetCursor();
+		}
+
+		private void ResetCursor()
+		{
+			System.Console.SetCursorPosition(cursorPositionX, cursorPositionY);
+		}
+	}
 }

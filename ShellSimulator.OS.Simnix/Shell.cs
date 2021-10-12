@@ -2,13 +2,41 @@ using System.Threading.Tasks;
 
 namespace ShellSimulator.OS.Simnix
 {
-    public class Shell : Application
-    {
-        public override string Name => "Shell";
+	public class Shell : Application
+	{
+		public bool IsRunning { get => OS.IsRunning && isRunning; }
+		private bool isRunning;
 
-        protected override Task<int> Main(string[] args)
-        {
-            throw new System.NotImplementedException();
-        }
-    }
+		public override string Name => "Shell";
+
+		protected override async Task<int> Main(string[] args)
+		{
+			isRunning = true;
+			while (IsRunning)
+			{
+				PrintF("Command> ");
+				string command = await ReadLine();
+
+				switch (command)
+				{
+					case "username":
+						PrintFLN(Username);
+						break;
+					case "exit":
+						isRunning = false;
+						break;
+					case "shutdown":
+						isRunning = false;
+						await StartApplication(new ShellSimulator.OS.Simnix.Applications.Shutdown(), null);
+						break;
+					default:
+						PrintFLN("Command {0} not found", command);
+						break;
+				}
+
+			}
+
+			return 0;
+		}
+	}
 }
