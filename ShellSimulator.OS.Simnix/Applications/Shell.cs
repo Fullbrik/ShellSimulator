@@ -1,6 +1,6 @@
 using System.Threading.Tasks;
 
-namespace ShellSimulator.OS.Simnix
+namespace ShellSimulator.OS.Simnix.Applications
 {
 	public class Shell : Application
 	{

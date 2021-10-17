@@ -269,15 +269,7 @@ namespace ShellSimulator
 		#endregion
 
 		#region User Stuff
-		public Task<int> StartUserSession(string username, string password, out string error, params string[] args)
-		{
-			if (CreateuserSession(username, password, out error, out UserSession session))
-				return StartApplication(session, null, null, args); // If we can create a session, run it like a normal application
-			else
-				return Task.FromResult<int>(int.MinValue); // If we fail, just return a non-zero number
-		}
-
-		protected abstract bool CreateuserSession(string username, string password, out string error, out UserSession session);
+		public abstract Task<int> StartUserSession(string username, string password, Application pipeTo);
 		#endregion
 
 		public virtual void Shutdown()

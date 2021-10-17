@@ -15,6 +15,17 @@ namespace ShellSimulator.OS.Simnix
 			RootFS = new SimpleFileSystem(this, "/", null);
 			AddRootFS("/", RootFS);
 
+			CreateDirectories();
+
+			MountFS("/proc", (os, name, parent) => new ProcessFileSystem(os, name, parent));
+
+			InstallApplications();
+
+			CreateRootUser();
+		}
+
+		private void CreateDirectories()
+		{
 			MakeDirectory("/bin");
 			MakeDirectory("/home");
 			MakeDirectory("/tmp");
@@ -24,45 +35,42 @@ namespace ShellSimulator.OS.Simnix
 			MakeDirectory("/var/log");
 			MakeDirectory("/usr");
 			MakeDirectory("/usr/local");
+		}
 
-			MountFS("/proc", (os, name, parent) => new ProcessFileSystem(os, name, parent));
-
+		private void InstallApplications()
+		{
+			// Install Daemons
 			InstallApplication<TerminalDaemon>("/bin/terminald");
+
+			// Install Shell
+			InstallApplication<Shell>("/bin/shell");
+			InstallApplication<Shell>("/bin/sh");
+
+			// Install posix utilities
+			InstallApplication<Echo>("/bin/echo");
+			InstallApplication<Clear>("/bin/clear");
+
+			// Install other utilities
+			InstallApplication<Shutdown>("/bin/shutdown");
 		}
 
-		public bool HasUser(string username)
+		private void CreateRootUser()
 		{
-			return true; // TODO: Add user exists check
+			var task = StartApplication(new UserAdd(), null, null, "-m", "-d", "/root", "root");
+			task.Wait();
+
+			if (task.Result != 0) throw new System.Exception("Error creating root user");
 		}
 
-		public bool IsPasswordCorrect(string username, string password)
+		public override async Task<int> StartUserSession(string username, string password, Application pipeTo)
 		{
-			return true; // TODO: Add user password check
-		}
+			// Start a user login task to verify the user. This will allow us to use LibUser to make our lives easier
+			int result = await StartApplication(new UserLogin(), null, null, "-u", username, "-p", password);
 
-		protected override bool CreateuserSession(string username, string password, out string error, out UserSession session)
-		{
-			if (HasUser(username))
-			{
-				if (IsPasswordCorrect(username, password))
-				{
-					error = null;
-					session = new SimnixUserSession(username);
-					return true;
-				}
-				else
-				{
-					error = "Incorrect password";
-				}
-			}
+			if (result == 0)
+				return await StartApplication(new SimnixUserSession(username), null, null);
 			else
-			{
-				error = "Cannot find user";
-			}
-
-			session = null;
-			return false;
-
+				return int.MinValue;
 		}
 
 		protected async override Task Init()
@@ -73,25 +81,23 @@ namespace ShellSimulator.OS.Simnix
 
 			while (IsRunning) // We will do this until we end
 			{
+				// Clear the screen
+				await StartApplication(new Clear(), null, terminal);
+
 				// Prompt the user to login
 				var login = new UserLogin();
 				terminal.PipeTo = login;
-				await StartApplication(login, null, terminal);
+				int result = await StartApplication(login, null, terminal);
 
 				// Get the login details
 				string username = login.InputUsername;
 				string password = login.InputPassword;
 
 				// Login
-				await StartUserSession(username, password, out string sessionError);
+				int sessionResult = await StartUserSession(username, password, terminal);
+				if (sessionResult != 0) await Task.Delay(5000); // If we got an error, hold for 5 seconds so the user can read any output.
 
-				// Print any errors to the terminal
-				if (sessionError != null)
-				{
-					await StartApplication(new Echo(), null, terminal, sessionError); // We just use echo because it will print it out to the terminal
-					await Task.Delay(5000);
-				}
-
+				// Wait for the terminal buffer to finnish before continueing
 				await terminal.WaitForBuffer();
 			}
 		}
