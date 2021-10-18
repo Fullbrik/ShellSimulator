@@ -1,125 +1,314 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace ShellSimulator.OS.Simnix.Lib
 {
-	public class LibUser : Library
-	{
-		public struct UserData
-		{
-			public string Name { get; }
-			public int UID { get; }
-			public string HomeDirectory { get; }
-			public string Shell { get; }
+    public class LibUser : Library
+    {
+        public struct UserData
+        {
+            public string Name { get; }
+            public int UID { get; }
+            public string HomeDirectory { get; }
+            public string Shell { get; }
 
-			public static UserData Parse(string line)
-			{
-				var parts = line.Split(':');
+            public static UserData Parse(string line)
+            {
+                var parts = line.Split(':');
 
-				// Note: /etc/passwd is in the same format as it is on GNU/Linux (I'm specifying GNU because I don't know what android uses).
-				// We don't use all the fields but they have to be there anyway
-				if (parts.Length == 7)
-				{
-					// Linux format: name:password:UID:GID:GECOS:directory:shell
-					// We need: name (0), UID (2), (home) directory (5), shell (6)
-					if (int.TryParse(parts[2], out int uid)) // This param is supposed to be a number, so lets make sure it is.
-					{
-						return new UserData(parts[0], uid, parts[5], parts[6]);
-					}
-					else
-					{
-						throw new System.Exception("UID parameter (2) isn't a integer.");
-					}
-				}
-				else
-				{
-					throw new System.Exception("Invalid parameters in file");
-				}
-			}
+                // Note: /etc/passwd is in the same format as it is on GNU/Linux (I'm specifying GNU because I don't know what android uses).
+                // We don't use all the fields but they have to be there anyway
+                if (parts.Length == 7)
+                {
+                    // Linux format: name:password:UID:GID:GECOS:directory:shell
+                    // We need: name (0), UID (2), (home) directory (5), shell (6)
+                    if (int.TryParse(parts[2], out int uid)) // This param is supposed to be a number, so lets make sure it is.
+                    {
+                        return new UserData(parts[0], uid, parts[5], parts[6]);
+                    }
+                    else
+                    {
+                        throw new System.Exception("UID parameter (2) isn't a integer.");
+                    }
+                }
+                else
+                {
+                    throw new System.Exception($"Invalid parameters in file. Parts.Length = {parts.Length}");
+                }
+            }
 
-			public UserData(string name, int uid, string homeDir, string shell)
-			{
-				Name = name;
-				UID = uid;
-				HomeDirectory = homeDir;
-				Shell = shell;
-			}
+            public UserData(string name, int uid, string homeDir, string shell)
+            {
+                Name = name;
+                UID = uid;
+                HomeDirectory = homeDir;
+                Shell = shell;
+            }
 
-			public override string ToString()
-			{
-				return $"{Name}:{UID}:{UID}:{Name}:{HomeDirectory}:{Shell}";
-			}
-		}
+            public override string ToString()
+            {
+                return $"{Name}:x:{UID}:{UID}:{Name}:{HomeDirectory}:{Shell}";
+            }
+        }
 
-		public LibUser(Application application) : base(application)
-		{
-		}
+        public struct PasswordData
+        {
+            public enum PasswordAlgorithm
+            {
+                /// <summary>
+                /// Unsupported
+                /// </summary>
+                MD5 = 1,
+                /// <summary>
+                /// Unsupported
+                /// </summary>
+                Blowfish = 2,
+                /// <summary>
+                /// Supported
+                /// </summary>
+                SHA256 = 5,
+                /// <summary>
+                /// Supported
+                /// </summary>
+                SHA512 = 6
+            }
 
-		public override string Name => "User";
+            public string Username { get; }
 
-		public bool CreateUser(string username, string homeFolder, string shell)
-		{
-			var users = Loadusers().ToList();
+            public PasswordAlgorithm Algorithm { get; }
+            public string Hash { get; }
+            public string Salt { get; }
 
-			if (UserExists(username, users)) return false;
+            public PasswordData(string username, PasswordAlgorithm algorithm, string hash, string salt)
+            {
+                Username = username;
+                Algorithm = algorithm;
+                Hash = hash;
+                Salt = salt;
+            }
 
-			UserData data = new UserData(username, 0, homeFolder, shell);
+            /// <summary>
+            /// Create basic password data with a password.
+            /// </summary>
+            /// <param name="username">The username of the person</param>
+            /// <param name="password">The password</param>
+            /// <param name="algorithm">The (optional)</param>
+            public PasswordData(string username, string password, PasswordAlgorithm algorithm = PasswordAlgorithm.SHA512)
+            {
+                Username = username;
+                Algorithm = algorithm;
 
-			users.Add(data);
+                // I don't know what to do with this yet
+                Salt = "";
 
-			SaveUsers(users);
-		}
+                Hash = ""; // I have to do this because of C#
+                Hash = GetPasswordHash(password);
+            }
 
-		public bool UserExists(string username)
-		{
-			var users = Loadusers();
+            public static PasswordData Parse(string line)
+            {
+                var parts = line.Split(':');
 
-			return UserExists(username, users);
-		}
+                // Note: /etc/shadow is in the same format as it is on GNU/Linux (I'm specifying GNU because I don't know what android uses).
+                // We don't use all the fields but they have to be there anyway
+                if (parts.Length == 8)
+                {
+                    // Linux format: username:password:changed:min:max:warn:inactive:expire
+                    // We need: username (0), password (1)
 
-		private bool UserExists(string username, IEnumerable<UserData> users)
-		{
-			// We loop through each user. if we find one that has the right username, we return true right away. Otherwise, we return false
-			foreach (var user in users)
-				if (user.Name == username) return true;
+                    string username = parts[0];
+                    string password = parts[1];
 
-			return false;
-		}
+                    // We then need to get the algorithm, salt, and hash
+                    var passwordParts = password.Split('$');
 
-		private UserData[] Loadusers()
-		{
-			string text = ReadUserDataFile();
-			return ParseUserData(text).ToArray();
-		}
+                    // Format: nothing$algorithm$salt$hash
+                    if (passwordParts.Length == 4)
+                    {
+                        if (byte.TryParse(passwordParts[1], out byte algorithmByte))
+                        {
+                            return new PasswordData(username, (PasswordAlgorithm)algorithmByte, passwordParts[3], passwordParts[2]);
+                        }
+                        else
+                        {
+                            throw new System.Exception("Algorithm parameter in password isn't a integer.");
+                        }
+                    }
+                    else
+                    {
+                        throw new System.Exception($"Invalid parameters in password. PasswordParts.Length = {passwordParts.Length}");
+                    }
+                }
+                else
+                {
+                    throw new System.Exception($"Invalid parameters in file. Parts.Length = {parts.Length}");
+                }
+            }
 
-		private string ReadUserDataFile()
-		{
-			// Get the text of the file and close it right away
-			var file = Application.OS.OpenFile("/etc/passwd", Application);
-			string text = file.ReadAllText();
-			file.Close(Application);
+            public bool IsCorrectPassword(string password)
+            {
+                string hash = GetPasswordHash(password);
 
-			return text;
-		}
+                return hash == this.Hash;
+            }
 
-		private IEnumerable<UserData> ParseUserData(string text)
-		{
-			var lines = text.Split('\n');
+            public string GetPasswordHash(string password)
+            {
+                switch (Algorithm)
+                {
+                    case PasswordAlgorithm.SHA256:
+                        using (SHA256 sha256 = SHA256.Create())
+                        {
+                            // Make hash and return it
+                            var hash = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
+                            return Encoding.UTF8.GetString(hash);
+                        }
+                    case PasswordAlgorithm.SHA512:
+                        using (SHA512 sha512 = SHA512.Create())
+                        {
+                            // Make hash and return it
+                            var hash = sha512.ComputeHash(Encoding.UTF8.GetBytes(password));
+                            return Encoding.UTF8.GetString(hash);
+                        }
+                    default:
+                        return null;
+                }
+            }
 
-			foreach (var line in lines)
-			{
-				if (!string.IsNullOrWhiteSpace(line))
-					yield return UserData.Parse(line);
-			}
-		}
+            public override string ToString()
+            {
+                string password = $"${(byte)Algorithm}${Salt}${Hash}";
+                return $"{Username}:{password}:x:x:x:x:x:x";
+            }
+        }
 
-		private void SaveUsers(IEnumerable<UserData> users)
-		{
-			var userStrings = users.Select((user) => user.ToString());
+        public LibUser(Application application) : base(application)
+        {
+        }
 
-			var text = string.Join('\n', userStrings);
+        public override string Name => "User";
 
-			var file = Application.OS.OpenFile("/etc/passwd", Application);
-		}
-	}
+        public bool CreateUser(string username, string homeFolder, string shell)
+        {
+            var users = Loadusers().ToList();
+
+            if (UserExists(username, users)) return false;
+
+            UserData data = new UserData(username, 0, homeFolder, shell);
+
+            users.Add(data);
+
+            SaveUsers(users);
+
+            return true;
+        }
+
+        public bool UserExists(string username)
+        {
+            var users = Loadusers();
+
+            return UserExists(username, users);
+        }
+
+        private bool UserExists(string username, IEnumerable<UserData> users)
+        {
+            // We loop through each user. if we find one that has the right username, we return true right away. Otherwise, we return false
+            foreach (var user in users)
+                if (user.Name == username) return true;
+
+            return false;
+        }
+
+        private UserData[] Loadusers()
+        {
+            string text = ReadUserDataFile();
+            return ParseUserData(text).ToArray();
+        }
+
+        private string ReadUserDataFile()
+        {
+            // Get the text of the file and close it right away
+            var file = Application.OS.OpenFile("/etc/passwd", Application);
+            string text = file.ReadAllText();
+            file.Close(Application);
+
+            return text;
+        }
+
+        private IEnumerable<UserData> ParseUserData(string text)
+        {
+            var lines = text.Split('\n');
+
+            foreach (var line in lines)
+            {
+                if (!string.IsNullOrWhiteSpace(line))
+                    yield return UserData.Parse(line);
+            }
+        }
+
+        private void SaveUsers(IEnumerable<UserData> users)
+        {
+            var userStrings = users.Select((user) => user.ToString());
+
+            var text = string.Join('\n', userStrings);
+
+            var file = Application.OS.OpenFile("/etc/passwd", Application);
+            file.WriteAllText(text);
+            file.Close(Application);
+        }
+
+        public bool IsCorrectPassword(string username, string password)
+        {
+            var passwords = LoadPasswordData();
+
+            //Go through each password data. If the username and password match, return true. If there are no matches, return false.
+            foreach (var data in passwords)
+                if (data.Username == username && data.IsCorrectPassword(password)) return true;
+
+            return false;
+        }
+
+        public bool SetUserPassword(string username, string password)
+        {
+            var users = Loadusers().ToList();
+        }
+
+        private PasswordData[] LoadPasswordData()
+        {
+            string text = ReadPasswordDataFile();
+            return ParsePasswordData(text).ToArray();
+        }
+
+        private string ReadPasswordDataFile()
+        {
+            // Get the text of the file and close it right away
+            var file = Application.OS.OpenFile("/etc/shadow", Application);
+            string text = file.ReadAllText();
+            file.Close(Application);
+
+            return text;
+        }
+
+        private IEnumerable<PasswordData> ParsePasswordData(string text)
+        {
+            var lines = text.Split('\n');
+
+            foreach (var line in lines)
+            {
+                if (!string.IsNullOrWhiteSpace(line))
+                    yield return PasswordData.Parse(line);
+            }
+        }
+
+        public void SavePasswordData(IEnumerable<PasswordData> passwordDatas)
+        {
+            var text = string.Join('\n', passwordDatas.Select((user) => user.ToString()));
+
+            var file = Application.OS.OpenFile("/etc/shadow", Application);
+            file.WriteAllText(text);
+            file.Close(Application);
+        }
+    }
 }
