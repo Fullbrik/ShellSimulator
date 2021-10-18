@@ -11,7 +11,7 @@ namespace ShellSimulator.OS.Simnix
 		{
 			CreateDirectories();
 
-			OS.MountFS("/proc", (os, name, parent) => new ProcessFileSystem(os, name, parent));
+			MountFS("/proc", (os, name, parent) => new ProcessFileSystem(os, name, parent));
 
 			InstallApplications();
 
@@ -22,34 +22,34 @@ namespace ShellSimulator.OS.Simnix
 
 		private void CreateDirectories()
 		{
-			OS.MakeDirectory("/bin");
-			OS.MakeDirectory("/home");
-			OS.MakeDirectory("/tmp");
-			OS.MakeDirectory("/opt");
-			OS.MakeDirectory("/etc");
-			OS.MakeDirectory("/var");
-			OS.MakeDirectory("/var/log");
-			OS.MakeDirectory("/usr");
-			OS.MakeDirectory("/usr/local");
+			MakeDirectory("/bin");
+			MakeDirectory("/home");
+			MakeDirectory("/tmp");
+			MakeDirectory("/opt");
+			MakeDirectory("/etc");
+			MakeDirectory("/var");
+			MakeDirectory("/var/log");
+			MakeDirectory("/usr");
+			MakeDirectory("/usr/local");
 		}
 
 		private void InstallApplications()
 		{
 			// Install Daemons
-			OS.InstallApplication<TerminalDaemon>("/bin/terminald");
+			InstallApplication<TerminalDaemon>("/bin/terminald");
 
 			// Install Shell
-			OS.InstallApplication<Shell>("/bin/shell");
-			OS.InstallApplication<Shell>("/bin/sh");
+			InstallApplication<Shell>("/bin/shell");
+			InstallApplication<Shell>("/bin/sh");
 
 			// Install posix utilities
-			OS.InstallApplication<Echo>("/bin/echo");
-			OS.InstallApplication<Clear>("/bin/clear");
+			InstallApplication<Echo>("/bin/echo");
+			InstallApplication<Clear>("/bin/clear");
 
 			// Install other utilities
-			OS.InstallApplication<Shutdown>("/bin/shutdown");
-			OS.InstallApplication<UserAdd>("/bin/useradd");
-			OS.InstallApplication<Passwd>("/bin/passwd");
+			InstallApplication<Shutdown>("/bin/shutdown");
+			InstallApplication<UserAdd>("/bin/useradd");
+			InstallApplication<Passwd>("/bin/passwd");
 		}
 
 		private async Task CreateRootUser()

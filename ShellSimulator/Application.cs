@@ -8,7 +8,7 @@ namespace ShellSimulator
 	{
 		public abstract string Name { get; }
 
-		public OperatingSystem OS { get; private set; }
+		private OperatingSystem OS { get; set; }
 		public Application Parent { get; private set; }
 		public Application PipeTo { get; set; }
 
@@ -158,15 +158,62 @@ namespace ShellSimulator
 		#endregion
 
 		#region Syscall Wrappers
-		protected Task<int> StartApplication(Application application, Application pipeTo, params string[] args)
+		public Task<int> StartApplication(Application application, Application pipeTo, params string[] args)
 		{
 			return OS.StartApplication(application, this, pipeTo, args);
+		}
+
+		public char PathSeperator { get => OS.PathSeperator; }
+
+		public void MakeDirectory(string path, bool recursive = true)
+		{
+			OS.MakeDirectory(GetFullPath(path), recursive);
+		}
+
+		public void MountFS(string path, Func<OperatingSystem, string, Directory, FileSystem> fsBuilder)
+		{
+			OS.MountFS(GetFullPath(path), fsBuilder);
+		}
+
+		public File OpenFile(string path)
+		{
+			return OS.OpenFile(GetFullPath(path), this);
+		}
+
+		public void InstallApplication<T>(string path)
+			where T : Application, new()
+		{
+			OS.InstallApplication<T>(GetFullPath(path));
+		}
+
+		public string GetFullPath(string path)
+		{
+			if (string.IsNullOrWhiteSpace(path) || OS.HasRootDir(path))
+			{
+				return path;
+			}
+			else
+			{
+				return CombinePaths(CurrentWorkingDirectory, path);
+			}
+		}
+
+		public string CombinePaths(params string[] paths)
+		{
+			return string.Join(PathSeperator, paths);
 		}
 		#endregion
 
 		#region User
 		public virtual string Username { get => Parent?.Username ?? ""; }
 
+
+		public virtual string CurrentWorkingDirectory { get => (Parent != null) ? Parent.CurrentWorkingDirectory : ""; set => Parent.CurrentWorkingDirectory = value; }
+		public virtual string GetEnvironmentVariable(string name)
+		{
+			if (Parent != null) return Parent.GetEnvironmentVariable(name);
+			else return "";
+		}
 		#endregion
 	}
 }

@@ -19,5 +19,18 @@ namespace ShellSimulator.OS.Simnix
 
 			return application;
 		}
+
+		public override string GetEnvironmentVariable(string name)
+		{
+			// We want to hard code some of the variables
+			switch (name)
+			{
+				case "CWD":
+					return CurrentWorkingDirectory;
+				default:
+					return base.GetEnvironmentVariable(name);
+			}
+
+		}
 	}
 }

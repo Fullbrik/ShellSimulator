@@ -137,6 +137,14 @@ namespace ShellSimulator
 
 		private Dictionary<string, FileSystem> FSRoots = new Dictionary<string, FileSystem>();
 
+		public bool HasRootDir(string path)
+		{
+			foreach (var root in FSRoots.Keys)
+				if (path.StartsWith(root)) return true;
+
+			return false;
+		}
+
 		/// <summary>
 		/// Add a root file system. Different operating systems might want to do this differently.
 		/// Unix style operating systems might just have a /, while NT style operating systems might have a differnet prefix for each drive (C:\, D:\, etc.).

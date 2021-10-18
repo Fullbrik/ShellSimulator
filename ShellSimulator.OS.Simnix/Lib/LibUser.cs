@@ -231,7 +231,7 @@ namespace ShellSimulator.OS.Simnix.Lib
 		private string ReadUserDataFile()
 		{
 			// Get the text of the file and close it right away
-			var file = Application.OS.OpenFile("/etc/passwd", Application);
+			var file = Application.OpenFile("/etc/passwd");
 			string text = file.ReadAllText();
 			file.Close(Application);
 
@@ -255,7 +255,7 @@ namespace ShellSimulator.OS.Simnix.Lib
 
 			var text = string.Join('\n', userStrings);
 
-			var file = Application.OS.OpenFile("/etc/passwd", Application);
+			var file = Application.OpenFile("/etc/passwd");
 			file.WriteAllText(text);
 			file.Close(Application);
 		}
@@ -307,7 +307,7 @@ namespace ShellSimulator.OS.Simnix.Lib
 		private string ReadPasswordDataFile()
 		{
 			// Get the text of the file and close it right away
-			var file = Application.OS.OpenFile("/etc/shadow", Application);
+			var file = Application.OpenFile("/etc/shadow");
 			string text = file.ReadAllText();
 			file.Close(Application);
 
@@ -329,7 +329,7 @@ namespace ShellSimulator.OS.Simnix.Lib
 		{
 			var text = string.Join('\n', passwordDatas.Select((user) => user.ToString()));
 
-			var file = Application.OS.OpenFile("/etc/shadow", Application);
+			var file = Application.OpenFile("/etc/shadow");
 			file.WriteAllText(text);
 			file.Close(Application);
 		}
