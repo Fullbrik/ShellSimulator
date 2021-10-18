@@ -9,6 +9,11 @@ namespace ShellSimulator
 		{
 		}
 
+		public override void ClearAllBytes()
+		{
+			throw new System.NotImplementedException();
+		}
+
 		public override void Close(Application application)
 		{
 			throw new System.NotImplementedException();

@@ -15,52 +15,11 @@ namespace ShellSimulator.OS.Simnix
 			RootFS = new SimpleFileSystem(this, "/", null);
 			AddRootFS("/", RootFS);
 
-			CreateDirectories();
-
-			MountFS("/proc", (os, name, parent) => new ProcessFileSystem(os, name, parent));
-
-			InstallApplications();
-
-			CreateRootUser();
-		}
-
-		private void CreateDirectories()
-		{
-			MakeDirectory("/bin");
-			MakeDirectory("/home");
-			MakeDirectory("/tmp");
-			MakeDirectory("/opt");
-			MakeDirectory("/etc");
-			MakeDirectory("/var");
-			MakeDirectory("/var/log");
-			MakeDirectory("/usr");
-			MakeDirectory("/usr/local");
-		}
-
-		private void InstallApplications()
-		{
-			// Install Daemons
-			InstallApplication<TerminalDaemon>("/bin/terminald");
-
-			// Install Shell
-			InstallApplication<Shell>("/bin/shell");
-			InstallApplication<Shell>("/bin/sh");
-
-			// Install posix utilities
-			InstallApplication<Echo>("/bin/echo");
-			InstallApplication<Clear>("/bin/clear");
-
-			// Install other utilities
-			InstallApplication<Shutdown>("/bin/shutdown");
-		}
-
-		private void CreateRootUser()
-		{
-			var task = StartApplication(new UserAdd(), null, null, "-m", "-d", "/root", "root");
+			var task = StartApplication(new Installer(), null, null);
 			task.Wait();
-
-			if (task.Result != 0) throw new System.Exception("Error creating root user");
 		}
+
+
 
 		public override async Task<int> StartUserSession(string username, string password, Application pipeTo)
 		{
@@ -95,7 +54,7 @@ namespace ShellSimulator.OS.Simnix
 
 				// Login
 				int sessionResult = await StartUserSession(username, password, terminal);
-				if (sessionResult != 0) await Task.Delay(5000); // If we got an error, hold for 5 seconds so the user can read any output.
+				if (sessionResult != 0 && IsRunning) await Task.Delay(5000); // If we got an error, hold for 5 seconds so the user can read any output.
 
 				// Wait for the terminal buffer to finnish before continueing
 				await terminal.WaitForBuffer();
