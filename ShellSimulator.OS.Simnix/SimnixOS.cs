@@ -60,5 +60,24 @@ namespace ShellSimulator.OS.Simnix
 				await terminal.WaitForBuffer();
 			}
 		}
+
+		public override string TranslatePathFromApplication(string path, Application application)
+		{
+			string translated = path;
+
+			// Replace home folder symbol (~)
+			if (translated.StartsWith("~"))
+			{
+				translated = application.HomeFolder + translated.Remove(0, 1);
+			}
+
+			return translated;
+		}
+
+		public override bool HasRootDir(string path)
+		{
+			if (path.StartsWith("~")) return true;
+			else return base.HasRootDir(path);
+		}
 	}
 }

@@ -55,8 +55,8 @@ namespace ShellSimulator
 		{
 			isRunning = true;
 
-			terminal = OS.GetDevice<Terminal>();
-			keyboard = OS.GetDevice<Keyboard>();
+			terminal = GetDevice<Terminal>();
+			keyboard = GetDevice<Keyboard>();
 
 			keyboard.OnKeyPressed += OnKeyboardKeyPressed;
 

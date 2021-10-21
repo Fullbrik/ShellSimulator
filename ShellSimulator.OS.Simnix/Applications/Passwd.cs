@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 namespace ShellSimulator.OS.Simnix.Applications
 {
-	public class Passwd : Application
+	public class Passwd : SimnixApplication
 	{
 		public override string Username => usernameOveride ?? base.Username;
 		private string usernameOveride = null;

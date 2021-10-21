@@ -137,7 +137,7 @@ namespace ShellSimulator
 
 		private Dictionary<string, FileSystem> FSRoots = new Dictionary<string, FileSystem>();
 
-		public bool HasRootDir(string path)
+		public virtual bool HasRootDir(string path)
 		{
 			foreach (var root in FSRoots.Keys)
 				if (path.StartsWith(root)) return true;
@@ -222,6 +222,22 @@ namespace ShellSimulator
 			}
 		}
 
+		public virtual string SimplifyPath(string path, bool isPathFile)
+		{
+			// This will navigate any . or .. and simplify that all out
+			var dir = GetDirectory(path, false, isPathFile, out string last);
+
+			string simplified = dir.FullPath;
+
+			// If the path was a file, we need to add on that file name
+			if (isPathFile) simplified += last;
+
+			// Remove trailing / if it isn't the only character
+			if (simplified.EndsWith(PathSeperator) && simplified.Length != 1) simplified = simplified.Remove(simplified.Length - 1);
+
+			return simplified;
+		}
+
 		private Directory GetDirectory(string path, bool createMissing, bool ignoreLast, out string last)
 		{
 			last = null; // If we don't ignore last, we don't need to provide a last.
@@ -274,6 +290,8 @@ namespace ShellSimulator
 		{
 			return path.Split(PathSeperator);
 		}
+
+		public abstract string TranslatePathFromApplication(string path, Application application);
 		#endregion
 
 		#region User Stuff

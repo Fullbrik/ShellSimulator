@@ -16,10 +16,10 @@ class TestApp : Application
 
 		//PrintFLN(string.Join(',', OS.Processes.Select((p) => p.Name)));
 
-		//PrintFLN("Hello World!");
+		PrintFLN("Hello World!");
 
-		//PrintF("Whats your name?: ");
-		//string name = await ReadLine();
+		PrintF("Whats your name?: ");
+		string name = await ReadLine();
 
 		//PrintFLN("Hi {0}!", name);
 
@@ -48,16 +48,21 @@ class TestApp : Application
 		return 0;
 	}
 
-	private void PrintAllSubDirectories(OperatingSystem os, string currentPath, string depth)
+	protected override void ReceiveSignal(ApplicationSignal signal)
 	{
-		var dirs = os.GetAllSubDirectories(currentPath);
-		var files = os.GetAllFilesInDirectory(currentPath);
+		throw new NotImplementedException();
+	}
+
+	private void PrintAllSubDirectories(string currentPath, string depth)
+	{
+		var dirs = GetAllSubDirectories(currentPath);
+		var files = GetAllFilesInDirectory(currentPath);
 
 		PrintFLN(depth + currentPath);
 
 		foreach (var dir in dirs)
 		{
-			PrintAllSubDirectories(os, currentPath + dir + "/", depth + "\t");
+			PrintAllSubDirectories(currentPath + dir + "/", depth + "\t");
 		}
 
 		foreach (var file in files)
@@ -69,7 +74,7 @@ class TestApp : Application
 
 static class Program
 {
-	static void Main(string[] args)
+	static async Task Main(string[] args)
 	{
 		SimnixOS os = new SimnixOS();
 
@@ -78,10 +83,6 @@ static class Program
 		os.ConnectDevice(new ConsoleKeyboard());
 		os.ConnectDevice(new ConsoleTerminal());
 
-		os.Run().Wait();
-
-		//os.Shutdown();
+		await os.Run();
 	}
-
-
 }

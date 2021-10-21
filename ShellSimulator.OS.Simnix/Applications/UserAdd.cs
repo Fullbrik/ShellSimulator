@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 
 namespace ShellSimulator.OS.Simnix.Applications
 {
-	public class UserAdd : Application
+	public class UserAdd : SimnixApplication
 	{
 		public override string Name => "User Add";
 

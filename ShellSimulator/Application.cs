@@ -1,9 +1,16 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
+using ShellSimulator.Hardware;
 
 namespace ShellSimulator
 {
+	public enum ApplicationSignal
+	{
+
+	}
+
 	public abstract class Application
 	{
 		public abstract string Name { get; }
@@ -30,6 +37,12 @@ namespace ShellSimulator
 		}
 
 		protected abstract Task<int> Main(string[] args);
+
+		public void SendSignal(ApplicationSignal signal)
+		{
+			ReceiveSignal(signal);
+		}
+		protected abstract void ReceiveSignal(ApplicationSignal signal);
 
 		#region STDIO
 		private readonly List<char> inBuffer = new List<char>();
@@ -158,12 +171,24 @@ namespace ShellSimulator
 		#endregion
 
 		#region Syscall Wrappers
+		public bool IsOSRunning { get => OS.IsRunning; }
+
 		public Task<int> StartApplication(Application application, Application pipeTo, params string[] args)
 		{
 			return OS.StartApplication(application, this, pipeTo, args);
 		}
 
 		public char PathSeperator { get => OS.PathSeperator; }
+
+		public string[] GetAllSubDirectories(string path)
+		{
+			return OS.GetAllSubDirectories(GetFullPath(path));
+		}
+
+		public string[] GetAllFilesInDirectory(string path)
+		{
+			return OS.GetAllFilesInDirectory(GetFullPath(path));
+		}
 
 		public void MakeDirectory(string path, bool recursive = true)
 		{
@@ -186,26 +211,70 @@ namespace ShellSimulator
 			OS.InstallApplication<T>(GetFullPath(path));
 		}
 
+		public string SimplifyPath(string path, bool isPathFile)
+		{
+			return OS.SimplifyPath(GetFullPath(path), isPathFile);
+		}
+
 		public string GetFullPath(string path)
 		{
-			if (string.IsNullOrWhiteSpace(path) || OS.HasRootDir(path))
+			if (string.IsNullOrWhiteSpace(path))
 			{
-				return path;
+				return OS.TranslatePathFromApplication(CurrentWorkingDirectory, this);
+			}
+			else if (OS.HasRootDir(path))
+			{
+				return OS.TranslatePathFromApplication(path, this);
 			}
 			else
 			{
-				return CombinePaths(CurrentWorkingDirectory, path);
+				return OS.TranslatePathFromApplication(CombinePaths(CurrentWorkingDirectory, path), this);
 			}
 		}
 
 		public string CombinePaths(params string[] paths)
 		{
-			return string.Join(PathSeperator, paths);
+			if (paths.Length == 1) return paths[0];
+			else return string.Join
+			(
+				PathSeperator,
+				paths
+					.Select // Remove any trailing / so that they won't interfere with String.Join
+					(
+						(path) => (path.EndsWith(PathSeperator)
+							? path.Remove(path.Length - 1)
+							: path)
+					)
+			);
+		}
+
+		public T GetDaemon<T>()
+			where T : Daemon
+		{
+			return OS.GetDaemon<T>();
+		}
+
+		public T GetDevice<T>()
+			where T : Device
+		{
+			return OS.GetDevice<T>();
+		}
+
+		public T[] GetDevices<T>()
+			where T : Device
+		{
+			return OS.GetDevices<T>();
+		}
+
+		public void RequestShutdown()
+		{
+			OS.Shutdown();
 		}
 		#endregion
 
 		#region User
 		public virtual string Username { get => Parent?.Username ?? ""; }
+		public virtual string HomeFolder { get => Parent?.HomeFolder ?? ""; }
 
 
 		public virtual string CurrentWorkingDirectory { get => (Parent != null) ? Parent.CurrentWorkingDirectory : ""; set => Parent.CurrentWorkingDirectory = value; }

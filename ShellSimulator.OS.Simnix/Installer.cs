@@ -45,6 +45,8 @@ namespace ShellSimulator.OS.Simnix
 			// Install posix utilities
 			InstallApplication<Echo>("/bin/echo");
 			InstallApplication<Clear>("/bin/clear");
+			InstallApplication<LS>("/bin/ls");
+			InstallApplication<CD>("/bin/cd");
 
 			// Install other utilities
 			InstallApplication<Shutdown>("/bin/shutdown");
@@ -61,6 +63,11 @@ namespace ShellSimulator.OS.Simnix
 			if (result != 0) throw new System.Exception("Error creating root user");
 
 			if (!libUser.SetUserPassword("root", "root")) throw new System.Exception("Error setting password for root user");
+		}
+
+		protected override void ReceiveSignal(ApplicationSignal signal)
+		{
+			throw new System.NotImplementedException();
 		}
 	}
 }

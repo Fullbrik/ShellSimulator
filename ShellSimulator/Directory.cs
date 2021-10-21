@@ -27,12 +27,20 @@ namespace ShellSimulator
 
 		public virtual bool HasSubDirectory(string name)
 		{
-			return subDirectories.ContainsKey(name);
+			return name == "." || name == ".." || subDirectories.ContainsKey(name);
 		}
 
 		public virtual Directory GetDirectory(string name)
 		{
-			if (HasSubDirectory(name))
+			if (name == ".") // This directory
+			{
+				return this;
+			}
+			else if (name == "..") // Go back one directory
+			{
+				return Parent;
+			}
+			else if (HasSubDirectory(name))
 			{
 				return subDirectories[name];
 			}

@@ -222,6 +222,27 @@ namespace ShellSimulator.OS.Simnix.Lib
 			return false;
 		}
 
+		public bool GetUserData(string username, out string homeFolder, out string shell)
+		{
+			var users = Loadusers();
+
+			// We loop through each user. if we find one that has the right username, we set the data and return true right away. Otherwise, we return false
+			foreach (var user in users)
+			{
+				if (user.Name == username)
+				{
+					homeFolder = user.HomeDirectory;
+					shell = user.Shell;
+					return true;
+				}
+			}
+
+			// If we couldn't find the user, set everything to null
+			homeFolder = null;
+			shell = null;
+			return false;
+		}
+
 		private UserData[] Loadusers()
 		{
 			string text = ReadUserDataFile();
